@@ -161,22 +161,21 @@ main {
 /* Arrow Styling */
 .arrow {
   fill: none;
-  stroke: #4a5568;
-  stroke-width: 2;
+  stroke: #718096;
+  stroke-width: 2.5;
   marker-end: url(#arrowhead);
-  stroke-dasharray: 8 4;
   stroke-linecap: round;
-  animation: flowPulse 1.5s linear infinite;
 }
 
 .arrow.feedback {
   stroke: #e74c3c;
-  stroke-dasharray: 6 6;
-  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  stroke-width: 2;
   opacity: 0.8;
   marker-end: url(#arrowhead-feedback);
   stroke-linejoin: round;
   stroke-linecap: round;
+  animation: flowPulse 2s linear infinite;
 }
 
 /* Artifact Labels on Arrows */
@@ -270,7 +269,7 @@ main {
 
 /* Animations */
 @keyframes flowPulse {
-  from { stroke-dashoffset: 24; }
+  from { stroke-dashoffset: 14; }
   to { stroke-dashoffset: 0; }
 }
 

@@ -60,11 +60,11 @@ function renderArrows() {
   // Arrowhead markers
   svg.innerHTML = `
     <defs>
-      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="#4a5568"/>
+      <marker id="arrowhead" markerWidth="6" markerHeight="5" refX="5.5" refY="2.5" orient="auto">
+        <polygon points="0 0, 6 2.5, 0 5" fill="#718096"/>
       </marker>
-      <marker id="arrowhead-feedback" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="#e74c3c"/>
+      <marker id="arrowhead-feedback" markerWidth="6" markerHeight="5" refX="5.5" refY="2.5" orient="auto">
+        <polygon points="0 0, 6 2.5, 0 5" fill="#e74c3c"/>
       </marker>
     </defs>
   `;
