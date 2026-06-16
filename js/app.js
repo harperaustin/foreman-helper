@@ -60,11 +60,11 @@ function renderArrows() {
   // Arrowhead markers
   svg.innerHTML = `
     <defs>
-      <marker id="arrowhead" markerWidth="6" markerHeight="5" refX="5.5" refY="2.5" orient="auto">
-        <polygon points="0 0, 6 2.5, 0 5" fill="#718096"/>
+      <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7.5" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#718096"/>
       </marker>
-      <marker id="arrowhead-feedback" markerWidth="6" markerHeight="5" refX="5.5" refY="2.5" orient="auto">
-        <polygon points="0 0, 6 2.5, 0 5" fill="#e74c3c"/>
+      <marker id="arrowhead-feedback" markerWidth="8" markerHeight="6" refX="7.5" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#e74c3c"/>
       </marker>
     </defs>
   `;
@@ -100,16 +100,18 @@ function renderArrows() {
     let d;
     if (isVertical) {
       const startX = from.cx;
-      const startY = from.bottom + 2;
+      const startY = from.bottom + 6;
       const endX = to.cx;
-      const endY = to.top - 2;
-      d = `M ${startX} ${startY} L ${endX} ${endY}`;
+      const endY = to.top - 6;
+      const midY = (startY + endY) / 2;
+      d = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
     } else {
-      const startX = from.right + 2;
+      const startX = from.right + 6;
       const startY = from.cy;
-      const endX = to.left - 2;
+      const endX = to.left - 6;
       const endY = to.cy;
-      d = `M ${startX} ${startY} L ${endX} ${endY}`;
+      const midX = (startX + endX) / 2;
+      d = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
     }
 
     path.setAttribute('d', d);
@@ -129,22 +131,22 @@ function renderArrows() {
 
     let d;
     if (isVertical) {
-      const startX = from.left - 10;
+      const startX = from.left - 14;
       const startY = from.cy;
-      const endX = to.left - 10;
+      const endX = to.left - 14;
       const endY = to.cy;
-      const offset = -35;
+      const offset = -55;
       const midX = startX + offset;
-      const r = Math.min(8, Math.abs(startY - endY) / 4, Math.abs(midX - startX) / 2);
+      const r = Math.min(12, Math.abs(startY - endY) / 4, Math.abs(midX - startX) / 2);
       d = `M ${startX} ${startY} L ${midX + r} ${startY} A ${r} ${r} 0 0 0 ${midX} ${startY - r} L ${midX} ${endY + r} A ${r} ${r} 0 0 0 ${midX + r} ${endY} L ${endX} ${endY}`;
     } else {
       const startX = from.cx;
-      const startY = from.bottom + 10;
+      const startY = from.bottom + 14;
       const endX = to.cx;
-      const endY = to.bottom + 10;
-      const offset = 40;
+      const endY = to.bottom + 14;
+      const offset = 60;
       const midY = startY + offset;
-      const r = Math.min(8, Math.abs(midY - startY) / 2, Math.abs(startX - endX) / 4);
+      const r = Math.min(12, Math.abs(midY - startY) / 2, Math.abs(startX - endX) / 4);
       d = `M ${startX} ${startY} L ${startX} ${midY - r} A ${r} ${r} 0 0 1 ${startX - r} ${midY} L ${endX + r} ${midY} A ${r} ${r} 0 0 0 ${endX} ${midY - r} L ${endX} ${endY}`;
     }
 
@@ -154,10 +156,10 @@ function renderArrows() {
     // Feedback label
     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     label.classList.add('artifact-label');
-    const midX = (from.cx + to.cx) / 2;
-    const midY = isVertical ? (from.cy + to.cy) / 2 : from.bottom + 45;
-    label.setAttribute('x', isVertical ? from.left - 35 : midX);
-    label.setAttribute('y', midY);
+    const labelMidX = (from.cx + to.cx) / 2;
+    const labelMidY = isVertical ? (from.cy + to.cy) / 2 : from.bottom + 70;
+    label.setAttribute('x', isVertical ? from.left - 55 : labelMidX);
+    label.setAttribute('y', labelMidY);
     label.textContent = loop.label;
     svg.appendChild(label);
   });
