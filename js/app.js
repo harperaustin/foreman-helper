@@ -128,7 +128,6 @@ function renderArrows() {
     path.classList.add('arrow', 'feedback');
 
     let d;
-    const r = 8;
     if (isVertical) {
       const startX = from.left - 10;
       const startY = from.cy;
@@ -136,6 +135,7 @@ function renderArrows() {
       const endY = to.cy;
       const offset = -35;
       const midX = startX + offset;
+      const r = Math.min(8, Math.abs(startY - endY) / 4, Math.abs(midX - startX) / 2);
       d = `M ${startX} ${startY} L ${midX + r} ${startY} A ${r} ${r} 0 0 0 ${midX} ${startY - r} L ${midX} ${endY + r} A ${r} ${r} 0 0 0 ${midX + r} ${endY} L ${endX} ${endY}`;
     } else {
       const startX = from.cx;
@@ -144,7 +144,8 @@ function renderArrows() {
       const endY = to.bottom + 10;
       const offset = 40;
       const midY = startY + offset;
-      d = `M ${startX} ${startY} L ${startX} ${midY - r} A ${r} ${r} 0 0 1 ${startX - r} ${midY} L ${endX + r} ${midY} A ${r} ${r} 0 0 1 ${endX} ${midY - r} L ${endX} ${endY}`;
+      const r = Math.min(8, Math.abs(midY - startY) / 2, Math.abs(startX - endX) / 4);
+      d = `M ${startX} ${startY} L ${startX} ${midY - r} A ${r} ${r} 0 0 1 ${startX - r} ${midY} L ${endX + r} ${midY} A ${r} ${r} 0 0 0 ${endX} ${midY - r} L ${endX} ${endY}`;
     }
 
     path.setAttribute('d', d);
