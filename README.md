@@ -2,8 +2,6 @@
 
 A responsive web-based visualizer showing the 7-agent foreman-helper pipeline flow with boxes, arrows, feedback loops, and multi-model indicators.
 
-![Pipeline Visualizer Screenshot](screenshot-placeholder.png)
-
 ## How to Run
 
 Open `index.html` directly in a browser, or serve it locally:

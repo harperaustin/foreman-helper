@@ -6,17 +6,18 @@
 }
 
 :root {
-  --color-researcher: #4A90D9;
-  --color-planner: #7B68EE;
-  --color-verifier: #E67E22;
-  --color-implementer: #27AE60;
-  --color-validator: #E74C3C;
-  --color-build-watcher: #F39C12;
-  --color-post-mortem: #8E44AD;
-  --bg: #1a1a2e;
-  --surface: #16213e;
-  --text: #e0e0e0;
-  --text-muted: #a0a0a0;
+  --bg: #f8f9fc;
+  --surface: #ffffff;
+  --text: #2d3748;
+  --text-muted: #718096;
+  --border: #e2e8f0;
+  --color-researcher: #4a90d9;
+  --color-planner: #7c6bc4;
+  --color-implementer: #38a169;
+  --color-verifier: #d97706;
+  --color-validator: #e85d75;
+  --color-build-watcher: #d97706;
+  --color-post-mortem: #6b7280;
 }
 
 body {
@@ -80,7 +81,8 @@ main {
   text-align: center;
   cursor: pointer;
   border-left: 4px solid var(--node-color, #555);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border);
   transition: transform 0.2s, box-shadow 0.2s;
   animation: fadeIn 0.4s ease-out both;
   z-index: 1;
@@ -88,7 +90,7 @@ main {
 
 .agent-node:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
 }
 
 .agent-node .stage-badge {
@@ -122,7 +124,7 @@ main {
 .agent-node .artifact-badge {
   margin-top: 0.6rem;
   display: inline-block;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.04);
   border-radius: 12px;
   padding: 0.2rem 0.5rem;
   font-size: 0.65rem;
@@ -145,8 +147,9 @@ main {
   left: 3px;
   right: -3px;
   bottom: 3px;
-  opacity: 0.5;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0.6;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .agent-node.multi-model::after {
@@ -154,22 +157,23 @@ main {
   left: 6px;
   right: -6px;
   bottom: 6px;
-  opacity: 0.25;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  opacity: 0.35;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 /* Arrow Styling */
 .arrow {
   fill: none;
-  stroke: #718096;
+  stroke: #94a3b8;
   stroke-width: 2;
   marker-end: url(#arrowhead);
   stroke-linecap: round;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
 }
 
 .arrow.feedback {
-  stroke: #e74c3c;
+  stroke: #f87171;
   stroke-dasharray: 6 4;
   stroke-width: 1.8;
   opacity: 0.8;
@@ -185,7 +189,7 @@ main {
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
   font-weight: 600;
   letter-spacing: 0.08em;
-  fill: #e74c3c;
+  fill: #dc2626;
   text-anchor: middle;
   paint-order: stroke;
   stroke: var(--bg);
@@ -205,7 +209,8 @@ main {
   background: var(--surface);
   border-radius: 16px;
   padding: 2rem;
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   transition: right 0.3s ease;
   overflow-y: auto;
   z-index: 100;

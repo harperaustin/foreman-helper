@@ -61,10 +61,10 @@ function renderArrows() {
   svg.innerHTML = `
     <defs>
       <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7.5" refY="3" orient="auto">
-        <polygon points="0 0, 8 3, 0 6" fill="#718096"/>
+        <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
       </marker>
       <marker id="arrowhead-feedback" markerWidth="8" markerHeight="6" refX="7.5" refY="3" orient="auto">
-        <polygon points="0 0, 8 3, 0 6" fill="#e74c3c"/>
+        <polygon points="0 0, 8 3, 0 6" fill="#f87171"/>
       </marker>
     </defs>
   `;

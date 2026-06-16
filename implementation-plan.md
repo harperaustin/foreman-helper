@@ -85,7 +85,6 @@ Create a responsive web-based visualizer showing the 7-agent pipeline flow with 
 - **Action:** create
 - **Details:**
   - Project title and description
-  - Screenshot placeholder
   - How to run: `npx serve .` or just open `index.html`
   - Pipeline overview (text description of the 7 stages)
   - Tech stack: HTML, CSS, vanilla JS, SVG
