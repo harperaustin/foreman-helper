@@ -141,21 +141,21 @@ main {
 }
 
 .agent-node.multi-model::before {
-  top: 4px;
-  left: 4px;
-  right: -4px;
-  bottom: -4px;
-  opacity: 0.6;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  top: -3px;
+  left: 3px;
+  right: -3px;
+  bottom: 3px;
+  opacity: 0.5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .agent-node.multi-model::after {
-  top: 8px;
-  left: 8px;
-  right: -8px;
-  bottom: -8px;
-  opacity: 0.3;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  top: -6px;
+  left: 6px;
+  right: -6px;
+  bottom: 6px;
+  opacity: 0.25;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Arrow Styling */
@@ -165,6 +165,7 @@ main {
   stroke-width: 2;
   marker-end: url(#arrowhead);
   stroke-dasharray: 8 4;
+  stroke-linecap: round;
   animation: flowPulse 1.5s linear infinite;
 }
 
@@ -174,14 +175,23 @@ main {
   stroke-width: 1.5;
   opacity: 0.8;
   marker-end: url(#arrowhead-feedback);
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 /* Artifact Labels on Arrows */
 .artifact-label {
-  font-size: 0.6rem;
-  fill: var(--text-muted);
+  font-size: 0.55rem;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  fill: #e74c3c;
   text-anchor: middle;
-  background: var(--bg);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* Agent Detail Panel */

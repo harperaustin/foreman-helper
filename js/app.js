@@ -103,15 +103,13 @@ function renderArrows() {
       const startY = from.bottom + 2;
       const endX = to.cx;
       const endY = to.top - 2;
-      const midY = (startY + endY) / 2;
-      d = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
+      d = `M ${startX} ${startY} L ${endX} ${endY}`;
     } else {
       const startX = from.right + 2;
       const startY = from.cy;
       const endX = to.left - 2;
       const endY = to.cy;
-      const midX = (startX + endX) / 2;
-      d = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
+      d = `M ${startX} ${startY} L ${endX} ${endY}`;
     }
 
     path.setAttribute('d', d);
@@ -135,15 +133,19 @@ function renderArrows() {
       const startY = from.cy;
       const endX = to.left - 10;
       const endY = to.cy;
-      const offset = -40;
-      d = `M ${startX} ${startY} C ${startX + offset} ${startY}, ${endX + offset} ${endY}, ${endX} ${endY}`;
+      const offset = -35;
+      const midX = startX + offset;
+      const r = Math.min(8, Math.abs(startY - endY) / 4, Math.abs(midX - startX) / 2);
+      d = `M ${startX} ${startY} L ${midX + r} ${startY} A ${r} ${r} 0 0 0 ${midX} ${startY - r} L ${midX} ${endY + r} A ${r} ${r} 0 0 0 ${midX + r} ${endY} L ${endX} ${endY}`;
     } else {
       const startX = from.cx;
       const startY = from.bottom + 10;
       const endX = to.cx;
       const endY = to.bottom + 10;
-      const offset = 50;
-      d = `M ${startX} ${startY} C ${startX} ${startY + offset}, ${endX} ${endY + offset}, ${endX} ${endY}`;
+      const offset = 40;
+      const midY = startY + offset;
+      const r = Math.min(8, Math.abs(midY - startY) / 2, Math.abs(startX - endX) / 4);
+      d = `M ${startX} ${startY} L ${startX} ${midY - r} A ${r} ${r} 0 0 1 ${startX - r} ${midY} L ${endX + r} ${midY} A ${r} ${r} 0 0 0 ${endX} ${midY - r} L ${endX} ${endY}`;
     }
 
     path.setAttribute('d', d);
