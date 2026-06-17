@@ -1,11 +1,11 @@
 const agents = [
-  { id: 'researcher', name: 'Researcher', stage: 1, description: 'Deep codebase analysis', artifact: 'research-report.md', multiModel: false },
-  { id: 'planner', name: 'Planner', stage: 2, description: 'Creates implementation plan from research', artifact: 'implementation-plan.md', multiModel: false },
-  { id: 'verifier', name: 'Verifier', stage: 3, description: 'Independent plan review', artifact: null, multiModel: true, outcomes: ['APPROVED', 'NEEDS_REVISION'] },
-  { id: 'implementer', name: 'Implementer', stage: 4, description: 'Executes the plan by making code changes', artifact: null, multiModel: false },
-  { id: 'validator', name: 'Validator', stage: 5, description: 'Verifies implementation, runs build/tests', artifact: 'implementation-issues.md', multiModel: true, outcomes: ['PASS', 'FAIL'] },
-  { id: 'build-watcher', name: 'Build Watcher', stage: 6, description: 'Monitors CI after PR push', artifact: null, multiModel: false },
-  { id: 'post-mortem', name: 'Post-Mortem', stage: 7, description: 'Pipeline aftercare and learnings', artifact: 'post-mortem-findings.md', multiModel: false },
+  { id: 'researcher', name: 'Researcher', stage: 1, description: 'Deep codebase analysis', artifact: 'research-report.md', multiModel: false, icon: '🔍' },
+  { id: 'planner', name: 'Planner', stage: 2, description: 'Creates implementation plan from research', artifact: 'implementation-plan.md', multiModel: false, icon: '📐' },
+  { id: 'verifier', name: 'Verifier', stage: 3, description: 'Independent plan review', artifact: null, multiModel: true, outcomes: ['APPROVED', 'NEEDS_REVISION'], icon: '🦺' },
+  { id: 'implementer', name: 'Implementer', stage: 4, description: 'Executes the plan by making code changes', artifact: null, multiModel: false, icon: '🔨' },
+  { id: 'validator', name: 'Validator', stage: 5, description: 'Verifies implementation, runs build/tests', artifact: 'implementation-issues.md', multiModel: true, outcomes: ['PASS', 'FAIL'], icon: '✅' },
+  { id: 'build-watcher', name: 'Build Watcher', stage: 6, description: 'Monitors CI after PR push', artifact: null, multiModel: false, icon: '🏗️' },
+  { id: 'post-mortem', name: 'Post-Mortem', stage: 7, description: 'Pipeline aftercare and learnings', artifact: 'post-mortem-findings.md', multiModel: false, icon: '📋' },
 ];
 
 const feedbackLoops = [
@@ -25,27 +25,53 @@ const colorMap = {
 
 function renderPipeline() {
   const container = document.getElementById('pipeline');
-  container.innerHTML = '';
 
-  agents.forEach((agent, i) => {
-    const node = document.createElement('div');
-    node.className = 'agent-node' + (agent.multiModel ? ' multi-model' : '');
-    node.dataset.agentId = agent.id;
-    node.style.setProperty('--node-color', colorMap[agent.id]);
-    node.style.animationDelay = `${i * 0.1}s`;
+  // Show under-construction state briefly
+  container.innerHTML = `
+    <div class="under-construction">
+      <svg class="mascot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="48" height="48" shape-rendering="crispEdges">
+        <rect x="10" y="2" width="12" height="2" fill="#f5c518"/>
+        <rect x="8" y="4" width="16" height="3" fill="#f5c518"/>
+        <rect x="7" y="7" width="18" height="1" fill="#d4a010"/>
+        <rect x="11" y="8" width="10" height="8" fill="#e8b87a"/>
+        <rect x="13" y="10" width="2" height="2" fill="#2c2416"/>
+        <rect x="17" y="10" width="2" height="2" fill="#2c2416"/>
+        <rect x="14" y="14" width="4" height="1" fill="#2c2416"/>
+        <rect x="10" y="16" width="12" height="9" fill="#3d7ab5"/>
+        <rect x="9" y="22" width="14" height="2" fill="#5c4033"/>
+        <rect x="11" y="25" width="4" height="5" fill="#3d7ab5"/>
+        <rect x="17" y="25" width="4" height="5" fill="#3d7ab5"/>
+        <rect x="10" y="29" width="6" height="3" fill="#5c4033"/>
+        <rect x="16" y="29" width="6" height="3" fill="#5c4033"/>
+      </svg>
+      <p>🏗️ Building...</p>
+    </div>
+  `;
 
-    node.innerHTML = `
-      <span class="stage-badge">${agent.stage}</span>
-      <div class="agent-name">${agent.name}</div>
-      <div class="agent-desc">${agent.description}</div>
-      ${agent.artifact ? `<span class="artifact-badge">📄 ${agent.artifact}</span>` : ''}
-    `;
+  // Replace with actual pipeline after brief delay
+  setTimeout(() => {
+    container.innerHTML = '';
 
-    node.addEventListener('click', () => showAgentDetail(agent.id));
-    container.appendChild(node);
-  });
+    agents.forEach((agent, i) => {
+      const node = document.createElement('div');
+      node.className = 'agent-node' + (agent.multiModel ? ' multi-model' : '');
+      node.dataset.agentId = agent.id;
+      node.style.setProperty('--node-color', colorMap[agent.id]);
+      node.style.animationDelay = `${i * 0.1}s`;
 
-  requestAnimationFrame(() => renderArrows());
+      node.innerHTML = `
+        <span class="stage-badge">${agent.stage}</span>
+        <div class="agent-name">${agent.icon} ${agent.name}</div>
+        <div class="agent-desc">${agent.description}</div>
+        ${agent.artifact ? `<span class="artifact-badge">🗂️ ${agent.artifact}</span>` : ''}
+      `;
+
+      node.addEventListener('click', () => showAgentDetail(agent.id));
+      container.appendChild(node);
+    });
+
+    requestAnimationFrame(() => renderArrows());
+  }, 300);
 }
 
 function renderArrows() {
@@ -61,10 +87,10 @@ function renderArrows() {
   svg.innerHTML = `
     <defs>
       <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7.5" refY="3" orient="auto">
-        <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
+        <polygon points="0 0, 8 3, 0 6" fill="#3d7ab5"/>
       </marker>
       <marker id="arrowhead-feedback" markerWidth="8" markerHeight="6" refX="7.5" refY="3" orient="auto">
-        <polygon points="0 0, 8 3, 0 6" fill="#f87171"/>
+        <polygon points="0 0, 8 3, 0 6" fill="#f47c20"/>
       </marker>
     </defs>
   `;
@@ -172,7 +198,7 @@ function showAgentDetail(agentId) {
   const panel = document.getElementById('agent-detail');
   panel.innerHTML = `
     <button class="close-btn" aria-label="Close">&times;</button>
-    <h2 style="color: ${colorMap[agent.id]}">${agent.name}</h2>
+    <h2 style="color: ${colorMap[agent.id]}">${agent.icon} ${agent.name}</h2>
     <div class="detail-section">
       <h3>Stage</h3>
       <p>${agent.stage} of ${agents.length}</p>
@@ -184,7 +210,7 @@ function showAgentDetail(agentId) {
     ${agent.artifact ? `
     <div class="detail-section">
       <h3>Artifact</h3>
-      <p>📄 ${agent.artifact}</p>
+      <p>🗂️ ${agent.artifact}</p>
     </div>` : ''}
     ${agent.multiModel ? `
     <div class="detail-section">
@@ -196,6 +222,17 @@ function showAgentDetail(agentId) {
       <h3>Outcomes</h3>
       <p>${agent.outcomes.map(o => `<span class="outcome-pill ${o === 'PASS' || o === 'APPROVED' ? 'pass' : 'fail'}">${o}</span>`).join('')}</p>
     </div>` : ''}
+    <div class="mascot-watermark">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" shape-rendering="crispEdges">
+        <rect x="10" y="2" width="12" height="2" fill="#2c2416"/>
+        <rect x="8" y="4" width="16" height="3" fill="#2c2416"/>
+        <rect x="7" y="7" width="18" height="1" fill="#2c2416"/>
+        <rect x="11" y="8" width="10" height="8" fill="#2c2416"/>
+        <rect x="10" y="16" width="12" height="9" fill="#2c2416"/>
+        <rect x="11" y="25" width="4" height="5" fill="#2c2416"/>
+        <rect x="17" y="25" width="4" height="5" fill="#2c2416"/>
+      </svg>
+    </div>
   `;
 
   panel.classList.add('visible');
