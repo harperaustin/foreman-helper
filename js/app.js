@@ -236,10 +236,9 @@ function renderArrows() {
     // Feedback label
     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     label.classList.add('artifact-label');
-    const midX = (from.cx + to.cx) / 2;
-    const midY = isVertical ? (from.cy + to.cy) / 2 : from.bottom + 45;
-    label.setAttribute('x', isVertical ? from.left - 35 : midX);
-    label.setAttribute('y', midY);
+    const labelPos = ArrowGeometryModule.computeFeedbackLabelPosition(from, to, isVertical);
+    label.setAttribute('x', labelPos.x);
+    label.setAttribute('y', labelPos.y);
     label.textContent = loop.label;
     svg.appendChild(label);
   });

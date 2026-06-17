@@ -4,6 +4,7 @@ const {
   computeArrowheadPoints,
   computeForwardPath,
   computeFeedbackPath,
+  computeFeedbackLabelPosition,
 } = require('../js/arrow-geometry.js');
 
 describe('computeArrowheadPoints', () => {
@@ -327,5 +328,66 @@ describe('arrow attachment contracts', () => {
     const [tipX, tipY] = points.trim().split(' ')[0].split(',').map(Number);
     expect(tipX).toBe(result.endX);
     expect(tipY).toBe(result.endY);
+  });
+});
+
+describe('computeFeedbackLabelPosition', () => {
+  test('returns coordinates on the feedback curve for horizontal layout', () => {
+    const from = { cx: 200, cy: 50, left: 150, right: 250, top: 25, bottom: 75 };
+    const to = { cx: 50, cy: 50, left: 0, right: 100, top: 25, bottom: 75 };
+    const result = computeFeedbackLabelPosition(from, to, false);
+    expect(result.x).toBeGreaterThan(to.cx);
+    expect(result.x).toBeLessThan(from.cx);
+    expect(result.y).toBeGreaterThan(from.bottom);
+  });
+
+  test('returns coordinates on the feedback curve for vertical layout', () => {
+    const from = { cx: 50, cy: 200, left: 25, right: 75, top: 175, bottom: 225 };
+    const to = { cx: 50, cy: 50, left: 25, right: 75, top: 25, bottom: 75 };
+    const result = computeFeedbackLabelPosition(from, to, true);
+    expect(result.x).toBeLessThan(to.left);
+    expect(result.y).toBeGreaterThan(to.cy);
+    expect(result.y).toBeLessThan(from.cy);
+  });
+
+  test('label position changes when boxes move', () => {
+    const to = { cx: 50, cy: 50, left: 0, right: 100, top: 25, bottom: 75 };
+    const from1 = { cx: 200, cy: 50, left: 150, right: 250, top: 25, bottom: 75 };
+    const from2 = { cx: 400, cy: 50, left: 350, right: 450, top: 25, bottom: 75 };
+    const result1 = computeFeedbackLabelPosition(from1, to, false);
+    const result2 = computeFeedbackLabelPosition(from2, to, false);
+    expect(result1.x).not.toBeCloseTo(result2.x, 0);
+  });
+
+  test('handles coincident boxes gracefully (no NaN)', () => {
+    const box = { cx: 50, cy: 50, left: 25, right: 75, top: 25, bottom: 75 };
+    const result = computeFeedbackLabelPosition(box, box, false);
+    expect(Number.isFinite(result.x)).toBe(true);
+    expect(Number.isFinite(result.y)).toBe(true);
+  });
+
+  test('perpendicular offset keeps label away from curve midpoint', () => {
+    const from = { cx: 200, cy: 50, left: 150, right: 250, top: 25, bottom: 75 };
+    const to = { cx: 50, cy: 50, left: 0, right: 100, top: 25, bottom: 75 };
+    const result = computeFeedbackLabelPosition(from, to, false);
+
+    // Manually compute the raw Bézier midpoint (no perpendicular offset)
+    const startX = from.cx, startY = from.bottom;
+    const endX = to.cx, endY = to.bottom;
+    const offset = 50;
+    // Use the shortened endpoint logic
+    const tempD = `M ${startX} ${startY} C ${startX} ${startY + offset}, ${endX} ${endY + offset}, ${endX} ${endY}`;
+    const angle = tangentAngle(tempD);
+    const sEndX = endX - Math.cos(angle) * ARROW_SIZE;
+    const sEndY = endY - Math.sin(angle) * ARROW_SIZE;
+    const P0 = { x: startX, y: startY };
+    const P1 = { x: startX, y: startY + offset };
+    const P2 = { x: sEndX, y: sEndY + offset };
+    const P3 = { x: sEndX, y: sEndY };
+    const rawMidX = 0.125 * P0.x + 0.375 * P1.x + 0.375 * P2.x + 0.125 * P3.x;
+    const rawMidY = 0.125 * P0.y + 0.375 * P1.y + 0.375 * P2.y + 0.125 * P3.y;
+
+    const dist = Math.hypot(result.x - rawMidX, result.y - rawMidY);
+    expect(dist).toBeCloseTo(14, 0);
   });
 });

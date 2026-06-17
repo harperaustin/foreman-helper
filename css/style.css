@@ -197,7 +197,11 @@ main {
   font-size: 0.6rem;
   fill: var(--text-muted);
   text-anchor: middle;
-  background: var(--bg);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* Agent Detail Panel */
