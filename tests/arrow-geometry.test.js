@@ -127,15 +127,15 @@ describe('computeFeedbackPath', () => {
   const from = { left: 200, top: 20, right: 300, bottom: 60, cx: 250, cy: 40, width: 100, height: 40 };
   const to = { left: 0, top: 20, right: 100, bottom: 60, cx: 50, cy: 40, width: 100, height: 40 };
 
-  test('horizontal: starts below from (from.cx, from.bottom + 10)', () => {
+  test('horizontal: starts below from (from.cx, from.bottom)', () => {
     const result = computeFeedbackPath(from, to, false);
-    expect(result.d).toMatch(/^M 250 70/);
+    expect(result.d).toMatch(/^M 250 60/);
   });
 
-  test('horizontal: endX/endY near to.cx, to.bottom + 10', () => {
+  test('horizontal: endX/endY at to.cx, to.bottom', () => {
     const result = computeFeedbackPath(from, to, false);
     expect(result.endX).toBe(50);
-    expect(result.endY).toBe(70);
+    expect(result.endY).toBe(60);
   });
 
   test('horizontal: d contains valid M and C commands', () => {
@@ -147,14 +147,14 @@ describe('computeFeedbackPath', () => {
   const vFrom = { left: 20, top: 150, right: 80, bottom: 200, cx: 50, cy: 175, width: 60, height: 50 };
   const vTo = { left: 20, top: 0, right: 80, bottom: 50, cx: 50, cy: 25, width: 60, height: 50 };
 
-  test('vertical: starts left of from (from.left - 10, from.cy)', () => {
+  test('vertical: starts left of from (from.left, from.cy)', () => {
     const result = computeFeedbackPath(vFrom, vTo, true);
-    expect(result.d).toMatch(/^M 10 175/);
+    expect(result.d).toMatch(/^M 20 175/);
   });
 
-  test('vertical: endX/endY near to.left - 10, to.cy', () => {
+  test('vertical: endX/endY at to.left, to.cy', () => {
     const result = computeFeedbackPath(vFrom, vTo, true);
-    expect(result.endX).toBe(10);
+    expect(result.endX).toBe(20);
     expect(result.endY).toBe(25);
   });
 });
@@ -188,5 +188,63 @@ describe('edge cases', () => {
     expect(() => computeForwardPath(from, to, true)).not.toThrow();
     expect(() => computeFeedbackPath(from, to, false)).not.toThrow();
     expect(() => computeFeedbackPath(from, to, true)).not.toThrow();
+  });
+});
+
+describe('arrow attachment contracts', () => {
+  test('forward horizontal: arrowhead tip lands exactly on target box left edge', () => {
+    const from = { left: 0, top: 20, right: 100, bottom: 60, cx: 50, cy: 40, width: 100, height: 40 };
+    const to = { left: 200, top: 20, right: 300, bottom: 60, cx: 250, cy: 40, width: 100, height: 40 };
+    const result = computeForwardPath(from, to, false);
+    expect(result.endX).toBe(to.left);
+    expect(result.endY).toBe(to.cy);
+  });
+
+  test('forward vertical: arrowhead tip lands exactly on target box top edge', () => {
+    const from = { left: 20, top: 0, right: 80, bottom: 50, cx: 50, cy: 25, width: 60, height: 50 };
+    const to = { left: 20, top: 150, right: 80, bottom: 200, cx: 50, cy: 175, width: 60, height: 50 };
+    const result = computeForwardPath(from, to, true);
+    expect(result.endX).toBe(to.cx);
+    expect(result.endY).toBe(to.top);
+  });
+
+  test('feedback horizontal: arrowhead tip lands on target box bottom edge', () => {
+    const from = { left: 200, top: 20, right: 300, bottom: 60, cx: 250, cy: 40, width: 100, height: 40 };
+    const to = { left: 0, top: 20, right: 100, bottom: 60, cx: 50, cy: 40, width: 100, height: 40 };
+    const result = computeFeedbackPath(from, to, false);
+    expect(result.endX).toBe(to.cx);
+    expect(result.endY).toBe(to.bottom);
+  });
+
+  test('feedback vertical: arrowhead tip lands on target box left edge', () => {
+    const from = { left: 20, top: 150, right: 80, bottom: 200, cx: 50, cy: 175, width: 60, height: 50 };
+    const to = { left: 20, top: 0, right: 80, bottom: 50, cx: 50, cy: 25, width: 60, height: 50 };
+    const result = computeFeedbackPath(from, to, true);
+    expect(result.endX).toBe(to.left);
+    expect(result.endY).toBe(to.cy);
+  });
+
+  test('forward path starts at source box edge', () => {
+    const from = { left: 0, top: 20, right: 100, bottom: 60, cx: 50, cy: 40, width: 100, height: 40 };
+    const to = { left: 200, top: 20, right: 300, bottom: 60, cx: 250, cy: 40, width: 100, height: 40 };
+    const result = computeForwardPath(from, to, false);
+    expect(result.d).toMatch(new RegExp(`^M ${from.right} ${from.cy}`));
+  });
+
+  test('feedback path starts at source box edge', () => {
+    const from = { left: 200, top: 20, right: 300, bottom: 60, cx: 250, cy: 40, width: 100, height: 40 };
+    const to = { left: 0, top: 20, right: 100, bottom: 60, cx: 50, cy: 40, width: 100, height: 40 };
+    const result = computeFeedbackPath(from, to, false);
+    expect(result.d).toMatch(new RegExp(`^M ${from.cx} ${from.bottom}`));
+  });
+
+  test('arrowhead tip coordinates match endX/endY from path computation', () => {
+    const from = { left: 0, top: 20, right: 100, bottom: 60, cx: 50, cy: 40, width: 100, height: 40 };
+    const to = { left: 200, top: 20, right: 300, bottom: 60, cx: 250, cy: 40, width: 100, height: 40 };
+    const result = computeForwardPath(from, to, false);
+    const points = computeArrowheadPoints(result.endX, result.endY, result.angle);
+    const [tipX, tipY] = points.trim().split(' ')[0].split(',').map(Number);
+    expect(tipX).toBe(result.endX);
+    expect(tipY).toBe(result.endY);
   });
 });

@@ -220,6 +220,42 @@ describe('drag behavior', () => {
     const saved = dragOffsets.get('accumulate');
     expect(saved).toEqual({ dx: 35, dy: 15 });
   });
+
+  test('pointerup triggers arrow re-render so arrows stay attached', () => {
+    const { renderPipeline, renderArrows, makeDraggable, dragOffsets } = loadApp();
+    renderPipeline();
+
+    // Setup mock rects
+    const container = document.getElementById('pipeline');
+    const containerRect = { left: 0, top: 0, right: 1400, bottom: 300, width: 1400, height: 300 };
+    container.getBoundingClientRect = jest.fn(() => containerRect);
+    const nodes = container.querySelectorAll('.agent-node');
+    nodes.forEach((node, i) => {
+      const x = 50 + i * 180;
+      node.getBoundingClientRect = jest.fn(() => ({
+        left: x, top: 100, right: x + 130, bottom: 160, width: 130, height: 60,
+      }));
+      node.setPointerCapture = jest.fn();
+      node.releasePointerCapture = jest.fn();
+    });
+    Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
+
+    renderArrows();
+    const svgBefore = container.querySelector('svg.arrows-overlay');
+    const pathsBefore = svgBefore ? svgBefore.querySelectorAll('path.arrow').length : 0;
+
+    // Simulate drag on first node
+    const firstNode = nodes[0];
+    firePointerEvent(firstNode, 'pointerdown', { clientX: 100, clientY: 100 });
+    firePointerEvent(firstNode, 'pointermove', { clientX: 130, clientY: 110 });
+    firePointerEvent(firstNode, 'pointerup', { clientX: 130, clientY: 110 });
+
+    // After pointerup, SVG should still exist with arrows
+    const svgAfter = container.querySelector('svg.arrows-overlay');
+    expect(svgAfter).not.toBeNull();
+    const pathsAfter = svgAfter.querySelectorAll('path.arrow').length;
+    expect(pathsAfter).toBe(pathsBefore);
+  });
 });
 
 describe('arrow rendering', () => {
@@ -311,6 +347,42 @@ describe('arrow rendering', () => {
       const [tipX, tipY] = pairs[0].split(',').map(Number);
       expect(Number.isNaN(tipX)).toBe(false);
       expect(Number.isNaN(tipY)).toBe(false);
+    });
+  });
+
+  test('forward arrowhead tips land on target box left edge (horizontal)', () => {
+    const { renderPipeline, renderArrows } = loadApp();
+    renderPipeline();
+    setupMockRects();
+    renderArrows();
+
+    const svg = document.querySelector('svg.arrows-overlay');
+    const arrowheads = svg.querySelectorAll('polygon.arrowhead');
+    arrowheads.forEach((polygon, i) => {
+      const points = polygon.getAttribute('points');
+      const [tipX, tipY] = points.trim().split(' ')[0].split(',').map(Number);
+      // Tip should be at target box's left edge (x = 50 + (i+1)*180) and cy (130)
+      const expectedX = 50 + (i + 1) * 180;
+      const expectedY = 130; // (100 + 160) / 2
+      expect(tipX).toBeCloseTo(expectedX, 0);
+      expect(tipY).toBeCloseTo(expectedY, 0);
+    });
+  });
+
+  test('feedback arrowhead tips land on target box bottom edge (horizontal)', () => {
+    const { renderPipeline, renderArrows } = loadApp();
+    renderPipeline();
+    setupMockRects();
+    renderArrows();
+
+    const svg = document.querySelector('svg.arrows-overlay');
+    const feedbackHeads = svg.querySelectorAll('polygon.arrowhead-feedback');
+    // feedbackLoops: verifier→planner and validator→implementer
+    // In horizontal layout, endY should be target.bottom (160)
+    feedbackHeads.forEach((polygon) => {
+      const points = polygon.getAttribute('points');
+      const [tipX, tipY] = points.trim().split(' ')[0].split(',').map(Number);
+      expect(tipY).toBeCloseTo(160, 0); // target.bottom = 160
     });
   });
 });

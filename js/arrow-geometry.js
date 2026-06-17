@@ -78,17 +78,17 @@ function computeFeedbackPath(from, to, isVertical) {
   let startX, startY, endX, endY, d;
 
   if (isVertical) {
-    startX = from.left - 10;
+    startX = from.left;
     startY = from.cy;
-    endX = to.left - 10;
+    endX = to.left;
     endY = to.cy;
     const offset = -40;
     d = `M ${startX} ${startY} C ${startX + offset} ${startY}, ${endX + offset} ${endY}, ${endX} ${endY}`;
   } else {
     startX = from.cx;
-    startY = from.bottom + 10;
+    startY = from.bottom;
     endX = to.cx;
-    endY = to.bottom + 10;
+    endY = to.bottom;
     const offset = 50;
     d = `M ${startX} ${startY} C ${startX} ${startY + offset}, ${endX} ${endY + offset}, ${endX} ${endY}`;
   }

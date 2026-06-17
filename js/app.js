@@ -103,6 +103,7 @@ function makeDraggable(node) {
     }
 
     cleanup();
+    renderArrows();
   }
 
   function onInterruptedDrag() {
