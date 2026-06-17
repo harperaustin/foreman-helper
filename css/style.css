@@ -142,7 +142,8 @@ main {
   min-width: 130px;
   max-width: 150px;
   text-align: center;
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none;
   border-top: 4px solid var(--accent-yellow);
   border-left: none;
   box-shadow: 0 2px 8px rgba(244, 124, 32, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -150,12 +151,20 @@ main {
   border-top: 4px solid var(--accent-yellow);
   transition: transform 0.2s, box-shadow 0.2s;
   animation: fadeIn 0.4s ease-out both;
+  transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
   z-index: 1;
 }
 
-.agent-node:hover {
-  transform: translateY(-4px);
+.agent-node:not(.dragging):hover {
+  transform: translate(var(--drag-x, 0px), calc(var(--drag-y, 0px) - 4px));
   box-shadow: 0 4px 12px rgba(244, 124, 32, 0.15);
+}
+
+.agent-node.dragging {
+  cursor: grabbing;
+  z-index: 1000;
+  user-select: none;
+  box-shadow: 0 8px 24px rgba(244, 124, 32, 0.25);
 }
 
 .agent-node .stage-badge {

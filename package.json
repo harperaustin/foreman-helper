@@ -2,7 +2,17 @@
   "name": "agent-pipeline-visualizer",
   "version": "1.0.0",
   "description": "Responsive web-based visualizer showing the 7-agent pipeline flow",
+  "main": "index.js",
   "scripts": {
-    "start": "npx serve ."
+    "start": "npx serve .",
+    "test": "jest --testEnvironment jsdom"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
+    "jsdom": "^29.1.1"
   }
 }

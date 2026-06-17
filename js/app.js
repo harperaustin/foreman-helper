@@ -13,6 +13,102 @@ const feedbackLoops = [
   { from: 'validator', to: 'implementer', label: 'FAIL' },
 ];
 
+// Drag state
+const dragOffsets = new Map(); // agentId → { dx, dy }
+
+function makeDraggable(node) {
+  const agentId = node.dataset.agentId;
+
+  // Clear fadeIn animation after it completes so its transform
+  // doesn't override drag transforms in the CSS cascade.
+  node.addEventListener('animationend', () => {
+    node.style.animation = 'none';
+    const saved = dragOffsets.get(agentId);
+    if (saved) {
+      node.style.setProperty('--drag-x', `${saved.dx}px`);
+      node.style.setProperty('--drag-y', `${saved.dy}px`);
+    }
+  }, { once: true });
+
+  let startX, startY, offsetX, offsetY, hasDragged;
+
+  function onPointerDown(e) {
+    if (!e.isPrimary || e.button !== 0) return;
+
+    e.preventDefault();
+    node.setPointerCapture(e.pointerId);
+
+    const saved = dragOffsets.get(agentId) || { dx: 0, dy: 0 };
+    startX = e.clientX;
+    startY = e.clientY;
+    offsetX = saved.dx;
+    offsetY = saved.dy;
+    hasDragged = false;
+
+    node.classList.add('dragging');
+
+    node.addEventListener('pointermove', onPointerMove);
+    node.addEventListener('pointerup', onPointerUp);
+    node.addEventListener('pointercancel', onInterruptedDrag);
+    node.addEventListener('lostpointercapture', onInterruptedDrag);
+  }
+
+  function onPointerMove(e) {
+    if (!e.isPrimary) return;
+
+    const dx = e.clientX - startX + offsetX;
+    const dy = e.clientY - startY + offsetY;
+
+    if (!hasDragged && Math.hypot(e.clientX - startX, e.clientY - startY) > 5) {
+      hasDragged = true;
+    }
+
+    node.style.setProperty('--drag-x', `${dx}px`);
+    node.style.setProperty('--drag-y', `${dy}px`);
+    renderArrows();
+  }
+
+  function persistCurrentPosition() {
+    const style = node.style;
+    const dx = parseFloat(style.getPropertyValue('--drag-x')) || 0;
+    const dy = parseFloat(style.getPropertyValue('--drag-y')) || 0;
+    dragOffsets.set(agentId, { dx, dy });
+  }
+
+  function cleanup() {
+    node.classList.remove('dragging');
+    node.removeEventListener('pointermove', onPointerMove);
+    node.removeEventListener('pointerup', onPointerUp);
+    node.removeEventListener('pointercancel', onInterruptedDrag);
+    node.removeEventListener('lostpointercapture', onInterruptedDrag);
+  }
+
+  function onPointerUp(e) {
+    if (!e.isPrimary) return;
+
+    const dx = e.clientX - startX + offsetX;
+    const dy = e.clientY - startY + offsetY;
+    dragOffsets.set(agentId, { dx, dy });
+
+    if (hasDragged) {
+      node.addEventListener('click', function suppressClick(clickEvent) {
+        clickEvent.stopImmediatePropagation();
+        clickEvent.preventDefault();
+      }, { capture: true, once: true });
+    }
+
+    cleanup();
+  }
+
+  function onInterruptedDrag() {
+    persistCurrentPosition();
+    renderArrows();
+    cleanup();
+  }
+
+  node.addEventListener('pointerdown', onPointerDown);
+}
+
 const colorMap = {
   'researcher': 'var(--color-researcher)',
   'planner': 'var(--color-planner)',
@@ -68,6 +164,13 @@ function renderPipeline() {
 
       node.addEventListener('click', () => showAgentDetail(agent.id));
       container.appendChild(node);
+
+      const savedOffset = dragOffsets.get(agent.id);
+      if (savedOffset) {
+        node.style.setProperty('--drag-x', `${savedOffset.dx}px`);
+        node.style.setProperty('--drag-y', `${savedOffset.dy}px`);
+      }
+      makeDraggable(node);
     });
 
     requestAnimationFrame(() => renderArrows());
@@ -261,3 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, renderPipeline, renderArrows, showAgentDetail };
+}
