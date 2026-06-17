@@ -93,6 +93,10 @@ function makeDraggable(node) {
 
     const dx = e.clientX - startX + offsetX;
     const dy = e.clientY - startY + offsetY;
+
+    // Apply final position to the node so getBoundingClientRect reflects it
+    node.style.setProperty('--drag-x', `${dx}px`);
+    node.style.setProperty('--drag-y', `${dy}px`);
     dragOffsets.set(agentId, { dx, dy });
 
     if (hasDragged) {

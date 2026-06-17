@@ -256,6 +256,80 @@ describe('drag behavior', () => {
     const pathsAfter = svgAfter.querySelectorAll('path.arrow').length;
     expect(pathsAfter).toBe(pathsBefore);
   });
+
+  test('pointerup applies final dx/dy to node CSS before re-rendering arrows', () => {
+    const { makeDraggable, dragOffsets } = loadApp();
+    const node = createMockNode('final-pos-test');
+    makeDraggable(node);
+
+    // Start drag at (100, 100), move to (120, 115), release at (130, 120)
+    // The last pointermove is at (120, 115) but pointerup is at (130, 120)
+    firePointerEvent(node, 'pointerdown', { clientX: 100, clientY: 100 });
+    firePointerEvent(node, 'pointermove', { clientX: 120, clientY: 115 });
+
+    // At this point CSS vars reflect the pointermove position
+    expect(node.style.getPropertyValue('--drag-x')).toBe('20px');
+    expect(node.style.getPropertyValue('--drag-y')).toBe('15px');
+
+    // Release at a different position than last pointermove
+    firePointerEvent(node, 'pointerup', { clientX: 130, clientY: 120 });
+
+    // CSS vars must reflect the final pointerup position, not the last pointermove
+    expect(node.style.getPropertyValue('--drag-x')).toBe('30px');
+    expect(node.style.getPropertyValue('--drag-y')).toBe('20px');
+
+    // dragOffsets must also match
+    const saved = dragOffsets.get('final-pos-test');
+    expect(saved).toEqual({ dx: 30, dy: 20 });
+  });
+
+  test('arrow endpoints match box final position after drag-end', () => {
+    const { renderPipeline, renderArrows } = loadApp();
+    renderPipeline();
+
+    const container = document.getElementById('pipeline');
+    const containerRect = { left: 0, top: 0, right: 1400, bottom: 300, width: 1400, height: 300 };
+    container.getBoundingClientRect = jest.fn(() => containerRect);
+
+    // After dragging, update mock rects to reflect the new position
+    const dragDx = 30;
+    const dragDy = 10;
+    const nodes = container.querySelectorAll('.agent-node');
+    nodes.forEach((node, i) => {
+      const x = 50 + i * 180;
+      // First node is dragged, others stay in place
+      const offsetX = i === 0 ? dragDx : 0;
+      const offsetY = i === 0 ? dragDy : 0;
+      node.getBoundingClientRect = jest.fn(() => ({
+        left: x + offsetX, top: 100 + offsetY,
+        right: x + 130 + offsetX, bottom: 160 + offsetY,
+        width: 130, height: 60,
+      }));
+      node.setPointerCapture = jest.fn();
+      node.releasePointerCapture = jest.fn();
+    });
+    Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
+
+    // Simulate the drag completing and arrows re-rendering
+    const firstNode = nodes[0];
+    firePointerEvent(firstNode, 'pointerdown', { clientX: 100, clientY: 100 });
+    firePointerEvent(firstNode, 'pointermove', { clientX: 100 + dragDx, clientY: 100 + dragDy });
+    firePointerEvent(firstNode, 'pointerup', { clientX: 100 + dragDx, clientY: 100 + dragDy });
+
+    // Verify arrow endpoint matches second node's left edge (target)
+    const svg = container.querySelector('svg.arrows-overlay');
+    expect(svg).not.toBeNull();
+    const arrowheads = svg.querySelectorAll('polygon.arrowhead');
+    expect(arrowheads.length).toBeGreaterThan(0);
+
+    // First arrowhead tip should point to the second node's left edge
+    const firstArrowhead = arrowheads[0];
+    const points = firstArrowhead.getAttribute('points');
+    const [tipX, tipY] = points.trim().split(' ')[0].split(',').map(Number);
+    // Second node: left = 50 + 1*180 = 230, cy = (100+160)/2 = 130
+    expect(tipX).toBeCloseTo(230, 0);
+    expect(tipY).toBeCloseTo(130, 0);
+  });
 });
 
 describe('arrow rendering', () => {
