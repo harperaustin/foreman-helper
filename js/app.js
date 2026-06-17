@@ -49,7 +49,8 @@ function makeDraggable(node) {
 
     node.addEventListener('pointermove', onPointerMove);
     node.addEventListener('pointerup', onPointerUp);
-    node.addEventListener('lostpointercapture', onLostCapture);
+    node.addEventListener('pointercancel', onInterruptedDrag);
+    node.addEventListener('lostpointercapture', onInterruptedDrag);
   }
 
   function onPointerMove(e) {
@@ -67,11 +68,19 @@ function makeDraggable(node) {
     renderArrows();
   }
 
+  function persistCurrentPosition() {
+    const style = node.style;
+    const dx = parseFloat(style.getPropertyValue('--drag-x')) || 0;
+    const dy = parseFloat(style.getPropertyValue('--drag-y')) || 0;
+    dragOffsets.set(agentId, { dx, dy });
+  }
+
   function cleanup() {
     node.classList.remove('dragging');
     node.removeEventListener('pointermove', onPointerMove);
     node.removeEventListener('pointerup', onPointerUp);
-    node.removeEventListener('lostpointercapture', onLostCapture);
+    node.removeEventListener('pointercancel', onInterruptedDrag);
+    node.removeEventListener('lostpointercapture', onInterruptedDrag);
   }
 
   function onPointerUp(e) {
@@ -91,9 +100,9 @@ function makeDraggable(node) {
     cleanup();
   }
 
-  function onLostCapture() {
-    const saved = dragOffsets.get(agentId) || { dx: offsetX, dy: offsetY };
-    dragOffsets.set(agentId, saved);
+  function onInterruptedDrag() {
+    persistCurrentPosition();
+    renderArrows();
     cleanup();
   }
 
@@ -314,3 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, renderPipeline, renderArrows, showAgentDetail };
+}
