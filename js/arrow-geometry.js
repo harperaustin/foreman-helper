@@ -116,8 +116,99 @@ function computeFeedbackPath(from, to, isVertical) {
   return { d, endX, endY, angle };
 }
 
+function computeFeedbackLabelPosition(from, to, isVertical) {
+  let startX, startY, endX, endY;
+
+  if (isVertical) {
+    startX = from.left;
+    startY = from.cy;
+    endX = to.left;
+    endY = to.cy;
+  } else {
+    startX = from.cx;
+    startY = from.bottom;
+    endX = to.cx;
+    endY = to.bottom;
+  }
+
+  const dist = Math.hypot(endX - startX, endY - startY);
+
+  // Compute shortened endpoint (same logic as computeFeedbackPath)
+  let sEndX = endX;
+  let sEndY = endY;
+  if (dist >= 1) {
+    let tempD;
+    if (isVertical) {
+      const offset = -40;
+      tempD = `M ${startX} ${startY} C ${startX + offset} ${startY}, ${endX + offset} ${endY}, ${endX} ${endY}`;
+    } else {
+      const offset = 50;
+      tempD = `M ${startX} ${startY} C ${startX} ${startY + offset}, ${endX} ${endY + offset}, ${endX} ${endY}`;
+    }
+    const angle = tangentAngle(tempD);
+    sEndX = endX - Math.cos(angle) * ARROW_SIZE;
+    sEndY = endY - Math.sin(angle) * ARROW_SIZE;
+  }
+
+  // Compute the four cubic Bézier control points (matching computeFeedbackPath's shortened path)
+  let P0, P1, P2, P3;
+  if (isVertical) {
+    const offset = -40;
+    P0 = { x: startX, y: startY };
+    P1 = { x: startX + offset, y: startY };
+    P2 = { x: sEndX + offset, y: sEndY };
+    P3 = { x: sEndX, y: sEndY };
+  } else {
+    const offset = 50;
+    P0 = { x: startX, y: startY };
+    P1 = { x: startX, y: startY + offset };
+    P2 = { x: sEndX, y: sEndY + offset };
+    P3 = { x: sEndX, y: sEndY };
+  }
+
+  // Evaluate cubic Bézier at t=0.5: mid = 0.125*P0 + 0.375*P1 + 0.375*P2 + 0.125*P3
+  const midX = 0.125 * P0.x + 0.375 * P1.x + 0.375 * P2.x + 0.125 * P3.x;
+  const midY = 0.125 * P0.y + 0.375 * P1.y + 0.375 * P2.y + 0.125 * P3.y;
+
+  // Tangent at t=0.5: B'(0.5) = -3*(0.25)*P0 + 3*(1-2+0.75)*P1 + 3*(1-0.75)*P2 + 3*(0.25)*P3
+  // Simplified: B'(0.5) = 0.75*(-P0 - P1 + P2 + P3)
+  const tanX = 0.75 * (-P0.x - P1.x + P2.x + P3.x);
+  const tanY = 0.75 * (-P0.y - P1.y + P2.y + P3.y);
+
+  // Normalize tangent
+  const tanLen = Math.hypot(tanX, tanY);
+  let perpX, perpY;
+  if (tanLen < 1e-9) {
+    // Fallback: offset away from boxes
+    perpX = isVertical ? -1 : 0;
+    perpY = isVertical ? 0 : 1;
+  } else {
+    const ntx = tanX / tanLen;
+    const nty = tanY / tanLen;
+    // Perpendicular: rotate 90° clockwise => (nty, -ntx) or counter-clockwise => (-nty, ntx)
+    // We want "away from boxes": in vertical mode, further left (negative x); in horizontal mode, further down (positive y)
+    if (isVertical) {
+      // Choose perpendicular that points more to the left (negative x)
+      perpX = -nty;
+      perpY = ntx;
+      if (perpX > 0) { perpX = -perpX; perpY = -perpY; }
+    } else {
+      // Choose perpendicular that points more downward (positive y)
+      perpX = nty;
+      perpY = -ntx;
+      if (perpY < 0) { perpX = -perpX; perpY = -perpY; }
+    }
+  }
+
+  const OFFSET_PX = 14;
+  return {
+    x: midX + perpX * OFFSET_PX,
+    y: midY + perpY * OFFSET_PX
+  };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { ARROW_SIZE, tangentAngle, computeArrowheadPoints, computeForwardPath, computeFeedbackPath };
+  module.exports = { ARROW_SIZE, tangentAngle, computeArrowheadPoints, computeForwardPath, computeFeedbackPath, computeFeedbackLabelPosition };
 } else if (typeof window !== 'undefined') {
-  window.ArrowGeometry = { ARROW_SIZE, tangentAngle, computeArrowheadPoints, computeForwardPath, computeFeedbackPath };
+  window.ArrowGeometry = { ARROW_SIZE, tangentAngle, computeArrowheadPoints, computeForwardPath, computeFeedbackPath, computeFeedbackLabelPosition };
 }
