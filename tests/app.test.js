@@ -14,6 +14,11 @@ if (typeof PointerEvent === 'undefined') {
   global.PointerEvent = PointerEvent;
 }
 
+// Polyfill Element.getAnimations for jsdom
+if (!Element.prototype.getAnimations) {
+  Element.prototype.getAnimations = function() { return []; };
+}
+
 beforeEach(() => {
   document.body.innerHTML = `
     <main>
@@ -106,6 +111,7 @@ describe('drag behavior', () => {
     node.style.setProperty('--drag-y', '0px');
     node.setPointerCapture = jest.fn();
     node.releasePointerCapture = jest.fn();
+    node.getAnimations = jest.fn(() => []);
     document.body.appendChild(node);
     return node;
   }
@@ -237,6 +243,7 @@ describe('drag behavior', () => {
       }));
       node.setPointerCapture = jest.fn();
       node.releasePointerCapture = jest.fn();
+      node.getAnimations = jest.fn(() => []);
     });
     Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
 
@@ -307,10 +314,9 @@ describe('drag behavior', () => {
       }));
       node.setPointerCapture = jest.fn();
       node.releasePointerCapture = jest.fn();
+      node.getAnimations = jest.fn(() => []);
     });
     Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
-
-    // Simulate the drag completing and arrows re-rendering
     const firstNode = nodes[0];
     firePointerEvent(firstNode, 'pointerdown', { clientX: 100, clientY: 100 });
     firePointerEvent(firstNode, 'pointermove', { clientX: 100 + dragDx, clientY: 100 + dragDy });
@@ -329,6 +335,98 @@ describe('drag behavior', () => {
     // Second node: left = 50 + 1*180 = 230, cy = (100+160)/2 = 130
     expect(tipX).toBeCloseTo(230, 0);
     expect(tipY).toBeCloseTo(130, 0);
+  });
+});
+
+describe('drag during fade-in animation', () => {
+  function createMockNode(agentId) {
+    const node = document.createElement('div');
+    node.dataset.agentId = agentId;
+    node.style.setProperty('--drag-x', '0px');
+    node.style.setProperty('--drag-y', '0px');
+    node.setPointerCapture = jest.fn();
+    node.releasePointerCapture = jest.fn();
+    node.getAnimations = jest.fn(() => []);
+    document.body.appendChild(node);
+    return node;
+  }
+
+  function firePointerEvent(node, type, opts = {}) {
+    const defaults = { isPrimary: true, button: 0, clientX: 0, clientY: 0, pointerId: 1 };
+    const event = new PointerEvent(type, { ...defaults, ...opts, bubbles: true });
+    node.dispatchEvent(event);
+    return event;
+  }
+
+  test('pointerdown cancels animation style so drag is not overridden', () => {
+    const { makeDraggable } = loadApp();
+    const node = createMockNode('anim-cancel-test');
+    node.style.animation = 'fadeIn 0.3s ease forwards';
+    makeDraggable(node);
+
+    firePointerEvent(node, 'pointerdown', { clientX: 100, clientY: 100 });
+
+    expect(node.style.animation).toBe('none');
+  });
+
+  test('pointerdown calls cancel on active animations', () => {
+    const { makeDraggable } = loadApp();
+    const node = createMockNode('anim-api-cancel');
+    const mockAnim = { cancel: jest.fn() };
+    node.getAnimations = jest.fn(() => [mockAnim]);
+    makeDraggable(node);
+
+    firePointerEvent(node, 'pointerdown', { clientX: 50, clientY: 50 });
+
+    expect(mockAnim.cancel).toHaveBeenCalled();
+  });
+
+  test('drag during animation produces correct CSS vars', () => {
+    const { makeDraggable } = loadApp();
+    const node = createMockNode('anim-drag-test');
+    node.style.animation = 'fadeIn 0.3s ease forwards';
+    node.getAnimations = jest.fn(() => [{ cancel: jest.fn() }]);
+    makeDraggable(node);
+
+    firePointerEvent(node, 'pointerdown', { clientX: 100, clientY: 100 });
+    firePointerEvent(node, 'pointermove', { clientX: 160, clientY: 130 });
+
+    expect(node.style.getPropertyValue('--drag-x')).toBe('60px');
+    expect(node.style.getPropertyValue('--drag-y')).toBe('30px');
+  });
+
+  test('drag during animation persists offset on pointerup', () => {
+    const { makeDraggable, dragOffsets } = loadApp();
+    const node = createMockNode('anim-persist-test');
+    node.style.animation = 'fadeIn 0.3s ease forwards';
+    node.getAnimations = jest.fn(() => [{ cancel: jest.fn() }]);
+    makeDraggable(node);
+
+    firePointerEvent(node, 'pointerdown', { clientX: 0, clientY: 0 });
+    firePointerEvent(node, 'pointermove', { clientX: 40, clientY: 25 });
+    firePointerEvent(node, 'pointerup', { clientX: 40, clientY: 25 });
+
+    const saved = dragOffsets.get('anim-persist-test');
+    expect(saved).toEqual({ dx: 40, dy: 25 });
+  });
+
+  test('second drag after animation-cancelled first drag accumulates correctly', () => {
+    const { makeDraggable, dragOffsets } = loadApp();
+    const node = createMockNode('anim-accum-test');
+    node.style.animation = 'fadeIn 0.3s ease forwards';
+    node.getAnimations = jest.fn(() => [{ cancel: jest.fn() }]);
+    makeDraggable(node);
+
+    // First drag during animation
+    firePointerEvent(node, 'pointerdown', { clientX: 0, clientY: 0 });
+    firePointerEvent(node, 'pointerup', { clientX: 20, clientY: 10 });
+
+    // Second drag (animation already cancelled)
+    firePointerEvent(node, 'pointerdown', { clientX: 50, clientY: 50 });
+    firePointerEvent(node, 'pointerup', { clientX: 70, clientY: 65 });
+
+    const saved = dragOffsets.get('anim-accum-test');
+    expect(saved).toEqual({ dx: 40, dy: 25 });
   });
 });
 

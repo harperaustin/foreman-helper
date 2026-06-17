@@ -43,6 +43,11 @@ function makeDraggable(node) {
     e.preventDefault();
     node.setPointerCapture(e.pointerId);
 
+    // Cancel any in-progress fadeIn animation immediately so its transform
+    // doesn't fight with drag transforms in the CSS cascade.
+    node.style.animation = 'none';
+    node.getAnimations().forEach(a => a.cancel());
+
     const saved = dragOffsets.get(agentId) || { dx: 0, dy: 0 };
     startX = e.clientX;
     startY = e.clientY;
