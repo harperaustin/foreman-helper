@@ -1,9 +1,10 @@
 {
-  "name": "pr-d0704d8e",
+  "name": "agent-pipeline-visualizer",
   "version": "1.0.0",
-  "description": "",
+  "description": "Responsive web-based visualizer showing the 7-agent pipeline flow",
   "main": "index.js",
   "scripts": {
+    "start": "npx serve .",
     "test": "jest --testEnvironment jsdom"
   },
   "keywords": [],

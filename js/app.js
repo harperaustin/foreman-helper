@@ -1,11 +1,11 @@
 const agents = [
-  { id: 'researcher', name: 'Researcher', stage: 1, description: 'Deep codebase analysis', artifact: 'research-report.md', multiModel: false },
-  { id: 'planner', name: 'Planner', stage: 2, description: 'Creates implementation plan from research', artifact: 'implementation-plan.md', multiModel: false },
-  { id: 'verifier', name: 'Verifier', stage: 3, description: 'Independent plan review', artifact: null, multiModel: true, outcomes: ['APPROVED', 'NEEDS_REVISION'] },
-  { id: 'implementer', name: 'Implementer', stage: 4, description: 'Executes the plan by making code changes', artifact: null, multiModel: false },
-  { id: 'validator', name: 'Validator', stage: 5, description: 'Verifies implementation, runs build/tests', artifact: 'implementation-issues.md', multiModel: true, outcomes: ['PASS', 'FAIL'] },
-  { id: 'build-watcher', name: 'Build Watcher', stage: 6, description: 'Monitors CI after PR push', artifact: null, multiModel: false },
-  { id: 'post-mortem', name: 'Post-Mortem', stage: 7, description: 'Pipeline aftercare and learnings', artifact: 'post-mortem-findings.md', multiModel: false },
+  { id: 'researcher', name: 'Researcher', stage: 1, description: 'Deep codebase analysis', artifact: 'research-report.md', multiModel: false, icon: '🔍' },
+  { id: 'planner', name: 'Planner', stage: 2, description: 'Creates implementation plan from research', artifact: 'implementation-plan.md', multiModel: false, icon: '📐' },
+  { id: 'verifier', name: 'Verifier', stage: 3, description: 'Independent plan review', artifact: null, multiModel: true, outcomes: ['APPROVED', 'NEEDS_REVISION'], icon: '🦺' },
+  { id: 'implementer', name: 'Implementer', stage: 4, description: 'Executes the plan by making code changes', artifact: null, multiModel: false, icon: '🔨' },
+  { id: 'validator', name: 'Validator', stage: 5, description: 'Verifies implementation, runs build/tests', artifact: 'implementation-issues.md', multiModel: true, outcomes: ['PASS', 'FAIL'], icon: '✅' },
+  { id: 'build-watcher', name: 'Build Watcher', stage: 6, description: 'Monitors CI after PR push', artifact: null, multiModel: false, icon: '🏗️' },
+  { id: 'post-mortem', name: 'Post-Mortem', stage: 7, description: 'Pipeline aftercare and learnings', artifact: 'post-mortem-findings.md', multiModel: false, icon: '📋' },
 ];
 
 const feedbackLoops = [
@@ -121,34 +121,60 @@ const colorMap = {
 
 function renderPipeline() {
   const container = document.getElementById('pipeline');
-  container.innerHTML = '';
 
-  agents.forEach((agent, i) => {
-    const node = document.createElement('div');
-    node.className = 'agent-node' + (agent.multiModel ? ' multi-model' : '');
-    node.dataset.agentId = agent.id;
-    node.style.setProperty('--node-color', colorMap[agent.id]);
-    node.style.animationDelay = `${i * 0.1}s`;
+  // Show under-construction state briefly
+  container.innerHTML = `
+    <div class="under-construction">
+      <svg class="mascot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="48" height="48" shape-rendering="crispEdges">
+        <rect x="10" y="2" width="12" height="2" fill="#f5c518"/>
+        <rect x="8" y="4" width="16" height="3" fill="#f5c518"/>
+        <rect x="7" y="7" width="18" height="1" fill="#d4a010"/>
+        <rect x="11" y="8" width="10" height="8" fill="#e8b87a"/>
+        <rect x="13" y="10" width="2" height="2" fill="#2c2416"/>
+        <rect x="17" y="10" width="2" height="2" fill="#2c2416"/>
+        <rect x="14" y="14" width="4" height="1" fill="#2c2416"/>
+        <rect x="10" y="16" width="12" height="9" fill="#3d7ab5"/>
+        <rect x="9" y="22" width="14" height="2" fill="#5c4033"/>
+        <rect x="11" y="25" width="4" height="5" fill="#3d7ab5"/>
+        <rect x="17" y="25" width="4" height="5" fill="#3d7ab5"/>
+        <rect x="10" y="29" width="6" height="3" fill="#5c4033"/>
+        <rect x="16" y="29" width="6" height="3" fill="#5c4033"/>
+      </svg>
+      <p>🏗️ Building...</p>
+    </div>
+  `;
 
-    node.innerHTML = `
-      <span class="stage-badge">${agent.stage}</span>
-      <div class="agent-name">${agent.name}</div>
-      <div class="agent-desc">${agent.description}</div>
-      ${agent.artifact ? `<span class="artifact-badge">📄 ${agent.artifact}</span>` : ''}
-    `;
+  // Replace with actual pipeline after brief delay
+  setTimeout(() => {
+    container.innerHTML = '';
 
-    node.addEventListener('click', () => showAgentDetail(agent.id));
-    container.appendChild(node);
+    agents.forEach((agent, i) => {
+      const node = document.createElement('div');
+      node.className = 'agent-node' + (agent.multiModel ? ' multi-model' : '');
+      node.dataset.agentId = agent.id;
+      node.style.setProperty('--node-color', colorMap[agent.id]);
+      node.style.animationDelay = `${i * 0.1}s`;
 
-    const savedOffset = dragOffsets.get(agent.id);
-    if (savedOffset) {
-      node.style.setProperty('--drag-x', `${savedOffset.dx}px`);
-      node.style.setProperty('--drag-y', `${savedOffset.dy}px`);
-    }
-    makeDraggable(node);
-  });
+      node.innerHTML = `
+        <span class="stage-badge">${agent.stage}</span>
+        <div class="agent-name">${agent.icon} ${agent.name}</div>
+        <div class="agent-desc">${agent.description}</div>
+        ${agent.artifact ? `<span class="artifact-badge">🗂️ ${agent.artifact}</span>` : ''}
+      `;
 
-  requestAnimationFrame(() => renderArrows());
+      node.addEventListener('click', () => showAgentDetail(agent.id));
+      container.appendChild(node);
+
+      const savedOffset = dragOffsets.get(agent.id);
+      if (savedOffset) {
+        node.style.setProperty('--drag-x', `${savedOffset.dx}px`);
+        node.style.setProperty('--drag-y', `${savedOffset.dy}px`);
+      }
+      makeDraggable(node);
+    });
+
+    requestAnimationFrame(() => renderArrows());
+  }, 300);
 }
 
 function renderArrows() {
@@ -163,11 +189,11 @@ function renderArrows() {
   // Arrowhead markers
   svg.innerHTML = `
     <defs>
-      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="#4a5568"/>
+      <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7.5" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#3d7ab5"/>
       </marker>
-      <marker id="arrowhead-feedback" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="#e74c3c"/>
+      <marker id="arrowhead-feedback" markerWidth="8" markerHeight="6" refX="7.5" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#f47c20"/>
       </marker>
     </defs>
   `;
@@ -203,15 +229,15 @@ function renderArrows() {
     let d;
     if (isVertical) {
       const startX = from.cx;
-      const startY = from.bottom + 2;
+      const startY = from.bottom + 6;
       const endX = to.cx;
-      const endY = to.top - 2;
+      const endY = to.top - 6;
       const midY = (startY + endY) / 2;
       d = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
     } else {
-      const startX = from.right + 2;
+      const startX = from.right + 6;
       const startY = from.cy;
-      const endX = to.left - 2;
+      const endX = to.left - 6;
       const endY = to.cy;
       const midX = (startX + endX) / 2;
       d = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
@@ -234,19 +260,23 @@ function renderArrows() {
 
     let d;
     if (isVertical) {
-      const startX = from.left - 10;
+      const startX = from.left - 14;
       const startY = from.cy;
-      const endX = to.left - 10;
+      const endX = to.left - 14;
       const endY = to.cy;
-      const offset = -40;
-      d = `M ${startX} ${startY} C ${startX + offset} ${startY}, ${endX + offset} ${endY}, ${endX} ${endY}`;
+      const offset = -55;
+      const midX = startX + offset;
+      const r = Math.min(12, Math.abs(startY - endY) / 4, Math.abs(midX - startX) / 2);
+      d = `M ${startX} ${startY} L ${midX + r} ${startY} A ${r} ${r} 0 0 0 ${midX} ${startY - r} L ${midX} ${endY + r} A ${r} ${r} 0 0 0 ${midX + r} ${endY} L ${endX} ${endY}`;
     } else {
       const startX = from.cx;
-      const startY = from.bottom + 10;
+      const startY = from.bottom + 14;
       const endX = to.cx;
-      const endY = to.bottom + 10;
-      const offset = 50;
-      d = `M ${startX} ${startY} C ${startX} ${startY + offset}, ${endX} ${endY + offset}, ${endX} ${endY}`;
+      const endY = to.bottom + 14;
+      const offset = 60;
+      const midY = startY + offset;
+      const r = Math.min(12, Math.abs(midY - startY) / 2, Math.abs(startX - endX) / 4);
+      d = `M ${startX} ${startY} L ${startX} ${midY - r} A ${r} ${r} 0 0 1 ${startX - r} ${midY} L ${endX + r} ${midY} A ${r} ${r} 0 0 0 ${endX} ${midY - r} L ${endX} ${endY}`;
     }
 
     path.setAttribute('d', d);
@@ -255,10 +285,10 @@ function renderArrows() {
     // Feedback label
     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     label.classList.add('artifact-label');
-    const midX = (from.cx + to.cx) / 2;
-    const midY = isVertical ? (from.cy + to.cy) / 2 : from.bottom + 45;
-    label.setAttribute('x', isVertical ? from.left - 35 : midX);
-    label.setAttribute('y', midY);
+    const labelMidX = (from.cx + to.cx) / 2;
+    const labelMidY = isVertical ? (from.cy + to.cy) / 2 : from.bottom + 70;
+    label.setAttribute('x', isVertical ? from.left - 55 : labelMidX);
+    label.setAttribute('y', labelMidY);
     label.textContent = loop.label;
     svg.appendChild(label);
   });
@@ -271,7 +301,7 @@ function showAgentDetail(agentId) {
   const panel = document.getElementById('agent-detail');
   panel.innerHTML = `
     <button class="close-btn" aria-label="Close">&times;</button>
-    <h2 style="color: ${colorMap[agent.id]}">${agent.name}</h2>
+    <h2 style="color: ${colorMap[agent.id]}">${agent.icon} ${agent.name}</h2>
     <div class="detail-section">
       <h3>Stage</h3>
       <p>${agent.stage} of ${agents.length}</p>
@@ -283,7 +313,7 @@ function showAgentDetail(agentId) {
     ${agent.artifact ? `
     <div class="detail-section">
       <h3>Artifact</h3>
-      <p>📄 ${agent.artifact}</p>
+      <p>🗂️ ${agent.artifact}</p>
     </div>` : ''}
     ${agent.multiModel ? `
     <div class="detail-section">
@@ -295,6 +325,17 @@ function showAgentDetail(agentId) {
       <h3>Outcomes</h3>
       <p>${agent.outcomes.map(o => `<span class="outcome-pill ${o === 'PASS' || o === 'APPROVED' ? 'pass' : 'fail'}">${o}</span>`).join('')}</p>
     </div>` : ''}
+    <div class="mascot-watermark">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" shape-rendering="crispEdges">
+        <rect x="10" y="2" width="12" height="2" fill="#2c2416"/>
+        <rect x="8" y="4" width="16" height="3" fill="#2c2416"/>
+        <rect x="7" y="7" width="18" height="1" fill="#2c2416"/>
+        <rect x="11" y="8" width="10" height="8" fill="#2c2416"/>
+        <rect x="10" y="16" width="12" height="9" fill="#2c2416"/>
+        <rect x="11" y="25" width="4" height="5" fill="#2c2416"/>
+        <rect x="17" y="25" width="4" height="5" fill="#2c2416"/>
+      </svg>
+    </div>
   `;
 
   panel.classList.add('visible');

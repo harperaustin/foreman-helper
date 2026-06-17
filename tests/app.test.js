@@ -54,9 +54,13 @@ describe('agents data', () => {
 });
 
 describe('renderPipeline', () => {
+  beforeEach(() => { jest.useFakeTimers(); });
+  afterEach(() => { jest.useRealTimers(); });
+
   test('creates agent nodes in the DOM', () => {
     const { renderPipeline } = loadApp();
     renderPipeline();
+    jest.runAllTimers();
     const nodes = document.querySelectorAll('.agent-node');
     expect(nodes.length).toBe(7);
   });
@@ -64,6 +68,7 @@ describe('renderPipeline', () => {
   test('each node has data-agent-id', () => {
     const { renderPipeline, agents } = loadApp();
     renderPipeline();
+    jest.runAllTimers();
     agents.forEach(agent => {
       const node = document.querySelector(`[data-agent-id="${agent.id}"]`);
       expect(node).not.toBeNull();
@@ -73,6 +78,7 @@ describe('renderPipeline', () => {
   test('multi-model agents get multi-model class', () => {
     const { renderPipeline, agents } = loadApp();
     renderPipeline();
+    jest.runAllTimers();
     agents.filter(a => a.multiModel).forEach(agent => {
       const node = document.querySelector(`[data-agent-id="${agent.id}"]`);
       expect(node.classList.contains('multi-model')).toBe(true);
