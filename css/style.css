@@ -1,0 +1,302 @@
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-researcher: #4A90D9;
+  --color-planner: #7B68EE;
+  --color-verifier: #E67E22;
+  --color-implementer: #27AE60;
+  --color-validator: #E74C3C;
+  --color-build-watcher: #F39C12;
+  --color-post-mortem: #8E44AD;
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --text: #e0e0e0;
+  --text-muted: #a0a0a0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+header p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Pipeline Container */
+#pipeline {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem 1rem;
+  flex-wrap: nowrap;
+}
+
+#pipeline svg.arrows-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* Agent Nodes */
+.agent-node {
+  position: relative;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 1.2rem 1rem;
+  min-width: 130px;
+  max-width: 150px;
+  text-align: center;
+  cursor: grab;
+  touch-action: none;
+  border-left: 4px solid var(--node-color, #555);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.2s;
+  animation: fadeIn 0.4s ease-out both;
+  transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
+  z-index: 1;
+}
+
+.agent-node:not(.dragging):hover {
+  transform: translate(var(--drag-x, 0px), calc(var(--drag-y, 0px) - 4px));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.agent-node.dragging {
+  cursor: grabbing;
+  z-index: 1000;
+  user-select: none;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.agent-node .stage-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--node-color, #555);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-node .agent-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+}
+
+.agent-node .agent-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.agent-node .artifact-badge {
+  margin-top: 0.6rem;
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+/* Multi-model stacked appearance */
+.agent-node.multi-model::before,
+.agent-node.multi-model::after {
+  content: '';
+  position: absolute;
+  border-radius: 12px;
+  background: var(--surface);
+  border-left: 4px solid var(--node-color, #555);
+  z-index: -1;
+}
+
+.agent-node.multi-model::before {
+  top: 4px;
+  left: 4px;
+  right: -4px;
+  bottom: -4px;
+  opacity: 0.6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.agent-node.multi-model::after {
+  top: 8px;
+  left: 8px;
+  right: -8px;
+  bottom: -8px;
+  opacity: 0.3;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Arrow Styling */
+.arrow {
+  fill: none;
+  stroke: #4a5568;
+  stroke-width: 2;
+  marker-end: url(#arrowhead);
+  stroke-dasharray: 8 4;
+  animation: flowPulse 1.5s linear infinite;
+}
+
+.arrow.feedback {
+  stroke: #e74c3c;
+  stroke-dasharray: 6 6;
+  stroke-width: 1.5;
+  opacity: 0.8;
+  marker-end: url(#arrowhead-feedback);
+}
+
+/* Artifact Labels on Arrows */
+.artifact-label {
+  font-size: 0.6rem;
+  fill: var(--text-muted);
+  text-anchor: middle;
+  background: var(--bg);
+}
+
+/* Agent Detail Panel */
+#agent-detail {
+  position: fixed;
+  top: 50%;
+  right: -400px;
+  transform: translateY(-50%);
+  width: 320px;
+  max-height: 80vh;
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+  transition: right 0.3s ease;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+#agent-detail.visible {
+  right: 2rem;
+}
+
+#agent-detail .close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+#agent-detail h2 {
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+#agent-detail .detail-section {
+  margin-top: 1rem;
+}
+
+#agent-detail .detail-section h3 {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.3rem;
+}
+
+#agent-detail .detail-section p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+#agent-detail .outcome-pill {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 0.4rem;
+  margin-top: 0.3rem;
+}
+
+#agent-detail .outcome-pill.pass {
+  background: rgba(39, 174, 96, 0.2);
+  color: #27ae60;
+}
+
+#agent-detail .outcome-pill.fail {
+  background: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
+}
+
+/* Animations */
+@keyframes flowPulse {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  #pipeline {
+    flex-direction: column;
+    gap: 2rem;
+    padding: 2rem 1rem;
+  }
+
+  .agent-node {
+    min-width: 200px;
+    max-width: 260px;
+  }
+
+  #agent-detail {
+    width: 90%;
+    right: -100%;
+  }
+
+  #agent-detail.visible {
+    right: 5%;
+  }
+}
