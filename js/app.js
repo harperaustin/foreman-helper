@@ -26,7 +26,7 @@ function setTheme(themeName) {
 
   // Update mascot images
   var mascotSrc = THEME_MASCOTS[themeName] || THEME_MASCOTS.dark;
-  document.querySelectorAll('img.header-mascot, img.node-mascot').forEach(function(img) {
+  document.querySelectorAll('img.header-mascot').forEach(function(img) {
     img.setAttribute('src', mascotSrc);
   });
 
@@ -208,7 +208,7 @@ function renderPipeline() {
       <div class="agent-name">${agent.name}</div>
       <div class="agent-desc">${agent.description}</div>
       ${agent.artifact ? `<span class="artifact-badge">📄 ${agent.artifact}</span>` : ''}
-      <img src="assets/foreman-mascot.svg" class="node-mascot" alt="" aria-hidden="true">
+
     `;
 
     if (agent.multiModel && agent.models) {
