@@ -18,6 +18,32 @@
   --text: #f0e8d8;
   --text-muted: #a89880;
   --accent: #f5c518;
+  --feedback-arrow: #b03030;
+}
+
+body.theme-light {
+  --bg: #f5f0e8;
+  --surface: #ffffff;
+  --text: #1c1c1c;
+  --text-muted: #5c5040;
+  --accent: #d4760a;
+  --feedback-arrow: #c0392b;
+}
+
+body.theme-colorful {
+  --bg: #1a0033;
+  --surface: #2d1b4e;
+  --text: #f0e8ff;
+  --text-muted: #b89cdc;
+  --accent: #e040fb;
+  --feedback-arrow: #ff5252;
+  --color-researcher: #00e676;
+  --color-planner: #40c4ff;
+  --color-verifier: #ffab40;
+  --color-implementer: #eeff41;
+  --color-validator: #ff5252;
+  --color-build-watcher: #e040fb;
+  --color-post-mortem: #7c4dff;
 }
 
 body {
@@ -55,14 +81,41 @@ header p {
   font-size: 0.95rem;
 }
 
+.theme-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.theme-btn {
+  font-family: 'VT323', monospace;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.theme-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.theme-btn:hover {
+  transform: translateY(-2px);
+}
+
 .caution-stripe {
   height: 8px;
   background: repeating-linear-gradient(
     -45deg,
-    #f5c518,
-    #f5c518 10px,
-    #1c1c1c 10px,
-    #1c1c1c 20px
+    var(--accent),
+    var(--accent) 10px,
+    var(--bg) 10px,
+    var(--bg) 20px
   );
   margin-bottom: 1.5rem;
   image-rendering: pixelated;
@@ -278,7 +331,7 @@ main {
 }
 
 .arrow.feedback {
-  stroke: #b03030;
+  stroke: var(--feedback-arrow);
   stroke-dasharray: 6 6;
   stroke-width: 1.5;
   opacity: 0.8;
@@ -289,7 +342,7 @@ main {
 }
 
 .arrowhead-feedback {
-  fill: #b03030;
+  fill: var(--feedback-arrow);
   opacity: 0.8;
 }
 
