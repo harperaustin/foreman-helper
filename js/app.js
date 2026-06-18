@@ -7,11 +7,19 @@ const THEME_MASCOTS = {
   dark: 'assets/foreman-mascot.svg',
   light: 'assets/foreman-mascot-light.svg',
   colorful: 'assets/foreman-mascot-colorful.svg',
+  professional: 'assets/foreman-mascot.svg',
 };
 
+const VALID_THEMES = ['dark', 'light', 'colorful', 'professional'];
+
 function setTheme(themeName) {
+  // Whitelist-validate theme name
+  if (VALID_THEMES.indexOf(themeName) === -1) {
+    themeName = 'dark';
+  }
+
   // Remove existing theme classes
-  document.body.classList.remove('theme-light', 'theme-colorful');
+  document.body.classList.remove('theme-light', 'theme-colorful', 'theme-professional');
   if (themeName !== 'dark') {
     document.body.classList.add('theme-' + themeName);
   }
@@ -385,6 +393,12 @@ function startDemo() {
   demoProgressEl.setAttribute('aria-live', 'polite');
   document.body.appendChild(demoProgressEl);
 
+  // Use professional demo path if professional theme is active
+  if (document.body.classList.contains('theme-professional')) {
+    runProfessionalDemo();
+    return;
+  }
+
   const nodes = document.querySelectorAll('.agent-node');
   const arrows = document.querySelectorAll('.arrows-overlay .arrow');
   const arrowheads = document.querySelectorAll('.arrows-overlay .arrowhead, .arrows-overlay .arrowhead-feedback');
@@ -423,9 +437,11 @@ function startDemo() {
       demoProgressEl.textContent = `Stage ${agent.stage}/${agents.length}: ${agent.name} — ${agent.description}`;
     }
 
-    // Show detail panel briefly
+    // Show detail panel briefly (suppressed in professional theme)
     const detailTimeout = setTimeout(() => {
-      if (demoActive) showAgentDetail(agent.id);
+      if (demoActive && !document.body.classList.contains('theme-professional')) {
+        showAgentDetail(agent.id);
+      }
     }, stepDuration * 0.3);
     demoTimeouts.push(detailTimeout);
 
@@ -471,6 +487,91 @@ function startDemo() {
   highlightStep(0);
 }
 
+const PROFESSIONAL_DEMO_SCENES = [
+  { agentIndex: null, text: 'Work items or manual input enter the pipeline', action: 'highlight-input' },
+  { agentIndex: 0, text: 'Deep codebase analysis begins', action: 'highlight' },
+  { agentIndex: 1, text: 'Implementation plan created from research', action: 'highlight' },
+  { agentIndex: 2, text: 'Multiple models provide independent plan review', action: 'fan-out' },
+  { agentIndex: 3, text: 'Code changes executed against the plan', action: 'highlight' },
+  { agentIndex: 4, text: 'Multiple models verify implementation independently', action: 'fan-out' },
+  { agentIndex: 5, text: 'CI pipeline monitored for build status', action: 'highlight' },
+  { agentIndex: 6, text: 'Pipeline aftercare and learnings captured', action: 'highlight' },
+  { agentIndex: null, text: 'Feedback loops enable automatic revision and retry', action: 'feedback' },
+];
+
+function runProfessionalDemo() {
+  const nodes = document.querySelectorAll('.agent-node');
+  const arrows = document.querySelectorAll('.arrows-overlay .arrow');
+  const arrowheads = document.querySelectorAll('.arrows-overlay .arrowhead, .arrows-overlay .arrowhead-feedback');
+  const stepDuration = 3000;
+
+  function runScene(sceneIndex) {
+    if (!demoActive) return;
+    if (sceneIndex >= PROFESSIONAL_DEMO_SCENES.length) {
+      const endTimeout = setTimeout(() => {
+        if (demoActive) stopDemo();
+      }, stepDuration);
+      demoTimeouts.push(endTimeout);
+      return;
+    }
+
+    const scene = PROFESSIONAL_DEMO_SCENES[sceneIndex];
+
+    // Clear previous highlights
+    nodes.forEach(n => n.classList.remove('demo-highlight'));
+    arrows.forEach(a => a.classList.remove('demo-active-arrow'));
+    arrowheads.forEach(a => a.classList.remove('demo-active-arrow'));
+
+    // Update progress text
+    if (demoProgressEl) {
+      demoProgressEl.textContent = scene.text;
+    }
+
+    if (scene.action === 'highlight-input') {
+      // Pulse the first node with a subtle glow
+      if (nodes[0]) nodes[0].classList.add('demo-highlight');
+    } else if (scene.action === 'highlight') {
+      const node = nodes[scene.agentIndex];
+      if (node) node.classList.add('demo-highlight');
+      // Highlight arrow leading to this node
+      if (scene.agentIndex > 0) {
+        const forwardArrows = document.querySelectorAll('.arrows-overlay .arrow:not(.feedback)');
+        const forwardHeads = document.querySelectorAll('.arrows-overlay .arrowhead');
+        if (forwardArrows[scene.agentIndex - 1]) forwardArrows[scene.agentIndex - 1].classList.add('demo-active-arrow');
+        if (forwardHeads[scene.agentIndex - 1]) forwardHeads[scene.agentIndex - 1].classList.add('demo-active-arrow');
+      }
+    } else if (scene.action === 'fan-out') {
+      const node = nodes[scene.agentIndex];
+      if (node) {
+        node.classList.add('demo-highlight');
+        node.classList.add('fanned');
+      }
+      if (scene.agentIndex > 0) {
+        const forwardArrows = document.querySelectorAll('.arrows-overlay .arrow:not(.feedback)');
+        const forwardHeads = document.querySelectorAll('.arrows-overlay .arrowhead');
+        if (forwardArrows[scene.agentIndex - 1]) forwardArrows[scene.agentIndex - 1].classList.add('demo-active-arrow');
+        if (forwardHeads[scene.agentIndex - 1]) forwardHeads[scene.agentIndex - 1].classList.add('demo-active-arrow');
+      }
+    } else if (scene.action === 'feedback') {
+      const feedbackArrows = document.querySelectorAll('.arrows-overlay .arrow.feedback');
+      const feedbackHeads = document.querySelectorAll('.arrows-overlay .arrowhead-feedback');
+      feedbackArrows.forEach(a => a.classList.add('demo-active-arrow'));
+      feedbackHeads.forEach(a => a.classList.add('demo-active-arrow'));
+      feedbackLoops.forEach(loop => {
+        const fromNode = document.querySelector(`.agent-node[data-agent-id="${loop.from}"]`);
+        const toNode = document.querySelector(`.agent-node[data-agent-id="${loop.to}"]`);
+        if (fromNode) fromNode.classList.add('demo-highlight');
+        if (toNode) toNode.classList.add('demo-highlight');
+      });
+    }
+
+    const nextTimeout = setTimeout(() => runScene(sceneIndex + 1), stepDuration);
+    demoTimeouts.push(nextTimeout);
+  }
+
+  runScene(0);
+}
+
 function stopDemo() {
   demoActive = false;
 
@@ -481,6 +582,7 @@ function stopDemo() {
   // Remove all demo classes
   document.body.classList.remove('demo-active');
   document.querySelectorAll('.agent-node.demo-highlight').forEach(n => n.classList.remove('demo-highlight'));
+  document.querySelectorAll('.agent-node.fanned').forEach(n => n.classList.remove('fanned'));
   document.querySelectorAll('.demo-active-arrow').forEach(el => el.classList.remove('demo-active-arrow'));
 
   // Remove progress indicator
@@ -551,5 +653,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, modelLogos, renderPipeline, renderArrows, showAgentDetail, setTheme, THEME_MASCOTS, startDemo, stopDemo, demoActive: () => demoActive };
+  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, modelLogos, renderPipeline, renderArrows, showAgentDetail, setTheme, THEME_MASCOTS, VALID_THEMES, PROFESSIONAL_DEMO_SCENES, runProfessionalDemo, startDemo, stopDemo, demoActive: () => demoActive };
 }

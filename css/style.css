@@ -575,6 +575,95 @@ body.demo-active .arrowhead-feedback.demo-active-arrow {
   animation: fadeIn 0.3s ease-in-out;
 }
 
+/* === Professional Theme === */
+body.theme-professional {
+  --bg: #FAFAFA;
+  --surface: #F3F2F1;
+  --text: #242424;
+  --text-muted: #616161;
+  --accent: #0078D4;
+  --feedback-arrow: #D13438;
+  --color-researcher: #0078D4;
+  --color-planner: #005A9E;
+  --color-verifier: #CA5010;
+  --color-implementer: #107C10;
+  --color-validator: #D13438;
+  --color-build-watcher: #5C2D91;
+  --color-post-mortem: #004E8C;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Inter', sans-serif;
+}
+
+body.theme-professional .caution-stripe {
+  display: none;
+}
+
+body.theme-professional .header-mascot,
+body.theme-professional .node-mascot {
+  display: none;
+}
+
+body.theme-professional #pipeline::before {
+  display: none;
+}
+
+body.theme-professional header h1 {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Inter', sans-serif;
+  font-size: 1.4rem;
+}
+
+body.theme-professional .agent-node {
+  border-radius: 8px;
+  border: 1px solid #E1DFDD;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  image-rendering: auto;
+}
+
+body.theme-professional .agent-node:not(.dragging):hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+}
+
+body.theme-professional .agent-node .stage-badge {
+  border-radius: 50%;
+}
+
+body.theme-professional .model-card {
+  border-radius: 8px;
+}
+
+body.theme-professional .theme-btn,
+body.theme-professional .demo-btn {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Inter', sans-serif;
+  border-radius: 6px;
+  border: 1px solid #E1DFDD;
+}
+
+body.theme-professional .demo-progress {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Inter', sans-serif;
+  border: none;
+  background: #0078D4;
+  color: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,120,212,0.3);
+}
+
+body.demo-active.theme-professional .agent-node.demo-highlight {
+  box-shadow: 0 0 16px rgba(0,120,212,0.4), 0 0 32px rgba(0,120,212,0.2);
+}
+
+body.demo-active.theme-professional #agent-detail {
+  display: none;
+}
+
+@keyframes typing-cursor {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+body.theme-professional .demo-progress::after {
+  content: ' |';
+  animation: typing-cursor 1s steps(1) infinite;
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   body.demo-active .agent-node {

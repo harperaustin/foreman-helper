@@ -568,6 +568,7 @@ describe('theme toggle', () => {
          <button class="theme-btn active" data-theme="dark" aria-pressed="true" title="Dark mode">🌙</button>
          <button class="theme-btn" data-theme="light" aria-pressed="false" title="Light mode">☀️</button>
          <button class="theme-btn" data-theme="colorful" aria-pressed="false" title="Colorful mode">🌈</button>
+         <button class="theme-btn" data-theme="professional" aria-pressed="false" title="Professional mode">💼</button>
        </div>
      </header>
      <main>
@@ -621,6 +622,22 @@ describe('theme toggle', () => {
    expect(darkBtn.getAttribute('aria-pressed')).toBe('false');
    expect(colorfulBtn.classList.contains('active')).toBe(false);
    expect(colorfulBtn.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  test('setTheme("professional") adds theme-professional class', () => {
+   const { setTheme } = loadApp();
+   setTheme('professional');
+   expect(document.body.classList.contains('theme-professional')).toBe(true);
+  });
+
+  test('setTheme with invalid value falls back to dark', () => {
+   const { setTheme } = loadApp();
+   setTheme('light');
+   expect(document.body.classList.contains('theme-light')).toBe(true);
+   setTheme('invalid-theme');
+   expect(document.body.classList.contains('theme-light')).toBe(false);
+   expect(document.body.classList.contains('theme-professional')).toBe(false);
+   expect(localStorage.getItem('foreman-theme')).toBe('dark');
   });
 });
 
@@ -711,5 +728,41 @@ describe('demo toggle', () => {
    expect(app.demoActive()).toBe(true);
    app.stopDemo();
    expect(app.demoActive()).toBe(false);
+  });
+
+  test('professional demo does not call showAgentDetail', () => {
+   const app = loadApp();
+   app.renderPipeline();
+   app.setTheme('professional');
+   app.startDemo();
+   // Advance past multiple scenes
+   jest.advanceTimersByTime(9000);
+   const panel = document.getElementById('agent-detail');
+   expect(panel.classList.contains('visible')).toBe(false);
+   app.stopDemo();
+  });
+
+  test('startDemo in professional theme triggers fan-out on multi-model nodes', () => {
+   const app = loadApp();
+   app.renderPipeline();
+   app.setTheme('professional');
+   app.startDemo();
+   // Scene index 3 (fan-out on verifier) happens at 3000ms * 3 = 9000ms
+   jest.advanceTimersByTime(9000);
+   const verifierNode = document.querySelector('.agent-node[data-agent-id="verifier"]');
+   expect(verifierNode.classList.contains('fanned')).toBe(true);
+   app.stopDemo();
+  });
+
+  test('rapid start/stop in professional mode cleans up all state', () => {
+   const app = loadApp();
+   app.renderPipeline();
+   app.setTheme('professional');
+   app.startDemo();
+   app.stopDemo();
+   expect(document.body.classList.contains('demo-active')).toBe(false);
+   expect(document.querySelectorAll('.demo-highlight').length).toBe(0);
+   expect(document.querySelectorAll('.agent-node.fanned').length).toBe(0);
+   expect(document.querySelector('.demo-progress')).toBeNull();
   });
 });
