@@ -1,3 +1,4 @@
+(function() {
 // Bug Squash Animation Module
 // Pixel-art animation of the foreman chasing and squashing a bug
 
@@ -257,3 +258,4 @@ function loop() {
 const BugSquashModule = { initAnim, startAnim, stopAnim, getAnimState, tick };
 if (typeof module !== 'undefined' && module.exports) { module.exports = BugSquashModule; }
 if (typeof window !== 'undefined') { window.BugSquashAnim = BugSquashModule; }
+})();

@@ -1,3 +1,4 @@
+(function() {
 // Dodge the Bugs! - Game Module
 const PLAYER_WIDTH = 40;
 const PLAYER_HEIGHT = 48;
@@ -191,3 +192,4 @@ function loop() {
 const GameModule = { initGame, startGame, stopGame, getGameState, movePlayer, tick, PLAYER_WIDTH, PLAYER_HEIGHT, BUG_SIZE, PLAYER_SPEED };
 if (typeof module !== 'undefined' && module.exports) { module.exports = GameModule; }
 if (typeof window !== 'undefined') { window.ForemanGame = GameModule; }
+})();
