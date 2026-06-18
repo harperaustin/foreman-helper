@@ -478,3 +478,114 @@ main {
     right: 5%;
   }
 }
+
+/* === Demo Animation === */
+.demo-btn {
+  font-family: 'VT323', monospace;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.demo-btn:hover {
+  transform: translateY(-2px);
+}
+
+.demo-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* When demo is active, dim all nodes by default */
+body.demo-active .agent-node {
+  opacity: 0.3;
+  transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out, box-shadow 0.4s ease-in-out;
+}
+
+/* Disable pointer interaction during demo */
+body.demo-active .agent-node {
+  pointer-events: none;
+  cursor: default;
+}
+
+/* Highlighted node during demo step */
+body.demo-active .agent-node.demo-highlight {
+  opacity: 1;
+  box-shadow: 0 0 20px rgba(245, 197, 24, 0.6), 0 0 40px rgba(245, 197, 24, 0.3);
+  transform: translate(var(--drag-x, 0px), var(--drag-y, 0px)) scale(1.08);
+  z-index: 10;
+}
+
+/* Arrow highlight during demo */
+body.demo-active .arrow {
+  opacity: 0.2;
+  transition: opacity 0.4s ease-in-out;
+}
+
+body.demo-active .arrow.demo-active-arrow {
+  opacity: 1;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 4px var(--accent));
+  transition: opacity 0.3s ease-in-out, stroke-width 0.3s ease-in-out;
+}
+
+body.demo-active .arrowhead {
+  opacity: 0.2;
+  transition: opacity 0.4s ease-in-out;
+}
+
+body.demo-active .arrowhead.demo-active-arrow {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px var(--accent));
+}
+
+/* Feedback arrow highlight */
+body.demo-active .arrow.feedback.demo-active-arrow {
+  stroke: var(--feedback-arrow);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px var(--feedback-arrow));
+}
+
+body.demo-active .arrowhead-feedback.demo-active-arrow {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px var(--feedback-arrow));
+}
+
+/* Demo progress indicator */
+.demo-progress {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  padding: 0.5rem 1.2rem;
+  font-family: 'VT323', monospace;
+  font-size: 1rem;
+  color: var(--text);
+  z-index: 200;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  body.demo-active .agent-node {
+    transition: none;
+  }
+  body.demo-active .agent-node.demo-highlight {
+    transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+  body.demo-active .arrow,
+  body.demo-active .arrowhead {
+    transition: none;
+  }
+}

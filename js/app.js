@@ -60,6 +60,11 @@ const feedbackLoops = [
 // Drag state
 const dragOffsets = new Map(); // agentId → { dx, dy }
 
+// Demo animation state
+let demoActive = false;
+let demoTimeouts = [];
+let demoProgressEl = null;
+
 function makeDraggable(node) {
   const agentId = node.dataset.agentId;
 
@@ -355,6 +360,148 @@ function showAgentDetail(agentId) {
   });
 }
 
+function startDemo() {
+  if (demoActive) return;
+  demoActive = true;
+  document.body.classList.add('demo-active');
+
+  // Close any open detail panel
+  const panel = document.getElementById('agent-detail');
+  panel.classList.remove('visible');
+  document.querySelectorAll('.agent-node.fanned').forEach(n => n.classList.remove('fanned'));
+
+  // Update toggle button
+  const btn = document.getElementById('demo-toggle');
+  if (btn) {
+    btn.textContent = '⏹ Stop';
+    btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
+  }
+
+  // Create progress indicator
+  demoProgressEl = document.createElement('div');
+  demoProgressEl.className = 'demo-progress';
+  demoProgressEl.setAttribute('role', 'status');
+  demoProgressEl.setAttribute('aria-live', 'polite');
+  document.body.appendChild(demoProgressEl);
+
+  const nodes = document.querySelectorAll('.agent-node');
+  const arrows = document.querySelectorAll('.arrows-overlay .arrow');
+  const arrowheads = document.querySelectorAll('.arrows-overlay .arrowhead, .arrows-overlay .arrowhead-feedback');
+
+  const stepDuration = 2000; // ms per agent
+  let currentStep = 0;
+
+  function highlightStep(index) {
+    if (!demoActive) return;
+
+    // Clear previous highlights
+    nodes.forEach(n => n.classList.remove('demo-highlight'));
+    arrows.forEach(a => a.classList.remove('demo-active-arrow'));
+    arrowheads.forEach(a => a.classList.remove('demo-active-arrow'));
+
+    if (index >= agents.length) {
+      // Demo complete — show feedback loops
+      showFeedbackLoops();
+      return;
+    }
+
+    const agent = agents[index];
+    const node = document.querySelector(`.agent-node[data-agent-id="${agent.id}"]`);
+    if (node) node.classList.add('demo-highlight');
+
+    // Highlight the arrow leading TO this node (arrow index = node index - 1)
+    if (index > 0) {
+      const forwardArrows = document.querySelectorAll('.arrows-overlay .arrow:not(.feedback)');
+      const forwardHeads = document.querySelectorAll('.arrows-overlay .arrowhead');
+      if (forwardArrows[index - 1]) forwardArrows[index - 1].classList.add('demo-active-arrow');
+      if (forwardHeads[index - 1]) forwardHeads[index - 1].classList.add('demo-active-arrow');
+    }
+
+    // Update progress
+    if (demoProgressEl) {
+      demoProgressEl.textContent = `Stage ${agent.stage}/${agents.length}: ${agent.name} — ${agent.description}`;
+    }
+
+    // Show detail panel briefly
+    const detailTimeout = setTimeout(() => {
+      if (demoActive) showAgentDetail(agent.id);
+    }, stepDuration * 0.3);
+    demoTimeouts.push(detailTimeout);
+
+    // Schedule next step
+    currentStep = index + 1;
+    const nextTimeout = setTimeout(() => highlightStep(currentStep), stepDuration);
+    demoTimeouts.push(nextTimeout);
+  }
+
+  function showFeedbackLoops() {
+    if (!demoActive) return;
+
+    // Clear all highlights
+    nodes.forEach(n => n.classList.remove('demo-highlight'));
+    arrows.forEach(a => a.classList.remove('demo-active-arrow'));
+    arrowheads.forEach(a => a.classList.remove('demo-active-arrow'));
+
+    if (demoProgressEl) {
+      demoProgressEl.textContent = 'Feedback loops: revision & failure paths';
+    }
+
+    // Highlight feedback arrows and their source/target nodes
+    const feedbackArrows = document.querySelectorAll('.arrows-overlay .arrow.feedback');
+    const feedbackHeads = document.querySelectorAll('.arrows-overlay .arrowhead-feedback');
+
+    feedbackArrows.forEach(a => a.classList.add('demo-active-arrow'));
+    feedbackHeads.forEach(a => a.classList.add('demo-active-arrow'));
+
+    feedbackLoops.forEach(loop => {
+      const fromNode = document.querySelector(`.agent-node[data-agent-id="${loop.from}"]`);
+      const toNode = document.querySelector(`.agent-node[data-agent-id="${loop.to}"]`);
+      if (fromNode) fromNode.classList.add('demo-highlight');
+      if (toNode) toNode.classList.add('demo-highlight');
+    });
+
+    // End demo after showing feedback loops
+    const endTimeout = setTimeout(() => {
+      if (demoActive) stopDemo();
+    }, stepDuration * 1.5);
+    demoTimeouts.push(endTimeout);
+  }
+
+  highlightStep(0);
+}
+
+function stopDemo() {
+  demoActive = false;
+
+  // Clear all scheduled timeouts
+  demoTimeouts.forEach(t => clearTimeout(t));
+  demoTimeouts = [];
+
+  // Remove all demo classes
+  document.body.classList.remove('demo-active');
+  document.querySelectorAll('.agent-node.demo-highlight').forEach(n => n.classList.remove('demo-highlight'));
+  document.querySelectorAll('.demo-active-arrow').forEach(el => el.classList.remove('demo-active-arrow'));
+
+  // Remove progress indicator
+  if (demoProgressEl && demoProgressEl.parentNode) {
+    demoProgressEl.parentNode.removeChild(demoProgressEl);
+  }
+  demoProgressEl = null;
+
+  // Close detail panel
+  const panel = document.getElementById('agent-detail');
+  panel.classList.remove('visible');
+
+  // Reset toggle button
+  const btn = document.getElementById('demo-toggle');
+  if (btn) {
+    btn.textContent = '▶ Demo';
+    btn.classList.remove('active');
+    btn.setAttribute('aria-pressed', 'false');
+  }
+}
+
 function handleResize() {
   clearTimeout(handleResize._timer);
   handleResize._timer = setTimeout(() => renderArrows(), 150);
@@ -379,6 +526,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Attach demo toggle listener
+  const demoBtn = document.getElementById('demo-toggle');
+  if (demoBtn) {
+    demoBtn.addEventListener('click', function() {
+      if (demoActive) {
+        stopDemo();
+      } else {
+        startDemo();
+      }
+    });
+  }
+
   // Close detail panel when clicking outside
   document.addEventListener('click', (e) => {
     const panel = document.getElementById('agent-detail');
@@ -392,5 +551,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, modelLogos, renderPipeline, renderArrows, showAgentDetail, setTheme, THEME_MASCOTS };
+  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, modelLogos, renderPipeline, renderArrows, showAgentDetail, setTheme, THEME_MASCOTS, startDemo, stopDemo, demoActive: () => demoActive };
 }
