@@ -445,16 +445,6 @@ main {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.agent-node .node-mascot {
-  position: absolute;
-  bottom: -8px;
-  left: -8px;
-  width: 24px;
-  height: 24px;
-  opacity: 0.6;
-  image-rendering: pixelated;
-  pointer-events: none;
-}
 
 /* Responsive */
 @media (max-width: 900px) {
@@ -597,8 +587,7 @@ body.theme-professional .caution-stripe {
   display: none;
 }
 
-body.theme-professional .header-mascot,
-body.theme-professional .node-mascot {
+body.theme-professional .header-mascot {
   display: none;
 }
 
