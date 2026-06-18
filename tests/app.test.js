@@ -623,3 +623,93 @@ describe('theme toggle', () => {
    expect(colorfulBtn.getAttribute('aria-pressed')).toBe('false');
   });
 });
+
+describe('demo toggle', () => {
+  beforeEach(() => {
+   document.body.innerHTML = `
+     <header>
+       <button class="demo-btn" id="demo-toggle" aria-pressed="false">▶ Demo</button>
+     </header>
+     <main>
+       <div id="pipeline"></div>
+       <div id="agent-detail"></div>
+     </main>
+   `;
+   jest.resetModules();
+   jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+   jest.useRealTimers();
+  });
+
+  test('startDemo adds demo-active class to body and updates button', () => {
+   const app = loadApp();
+   app.renderPipeline();
+   app.startDemo();
+   expect(document.body.classList.contains('demo-active')).toBe(true);
+   const btn = document.getElementById('demo-toggle');
+   expect(btn.textContent).toBe('⏹ Stop');
+   expect(btn.getAttribute('aria-pressed')).toBe('true');
+   app.stopDemo();
+  });
+
+  test('stopDemo removes demo-active class and resets button', () => {
+   const app = loadApp();
+   app.renderPipeline();
+   app.startDemo();
+   app.stopDemo();
+   expect(document.body.classList.contains('demo-active')).toBe(false);
+   const btn = document.getElementById('demo-toggle');
+   expect(btn.textContent).toBe('▶ Demo');
+   expect(btn.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  test('demo highlights first node immediately', () => {
+   const app = loadApp();
+   app.renderPipeline();
+   app.startDemo();
+   const firstNode = document.querySelector('.agent-node[data-agent-id="researcher"]');
+   expect(firstNode.classList.contains('demo-highlight')).toBe(true);
+   app.stopDemo();
+  });
+
+  test('demo advances to next node after stepDuration', () => {
+   const app = loadApp();
+   app.renderPipeline();
+   app.startDemo();
+   jest.advanceTimersByTime(2000);
+   const secondNode = document.querySelector('.agent-node[data-agent-id="planner"]');
+   expect(secondNode.classList.contains('demo-highlight')).toBe(true);
+   app.stopDemo();
+  });
+
+  test('stopDemo clears all demo highlights', () => {
+   const app = loadApp();
+   app.renderPipeline();
+   app.startDemo();
+   jest.advanceTimersByTime(2000);
+   app.stopDemo();
+   const highlighted = document.querySelectorAll('.demo-highlight');
+   expect(highlighted.length).toBe(0);
+  });
+
+  test('demo creates and removes progress indicator', () => {
+   const app = loadApp();
+   app.renderPipeline();
+   app.startDemo();
+   expect(document.querySelector('.demo-progress')).not.toBeNull();
+   app.stopDemo();
+   expect(document.querySelector('.demo-progress')).toBeNull();
+  });
+
+  test('demoActive getter reflects state', () => {
+   const app = loadApp();
+   app.renderPipeline();
+   expect(app.demoActive()).toBe(false);
+   app.startDemo();
+   expect(app.demoActive()).toBe(true);
+   app.stopDemo();
+   expect(app.demoActive()).toBe(false);
+  });
+});
