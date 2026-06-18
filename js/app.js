@@ -650,6 +650,58 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.agent-node.fanned').forEach(n => n.classList.remove('fanned'));
     }
   });
+
+  // Tab navigation
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+  let gameInitialized = false;
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.dataset.tab;
+      tabBtns.forEach(b => {
+        b.classList.toggle('active', b === btn);
+        b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+      });
+      tabPanels.forEach(p => {
+        p.classList.toggle('active', p.id === 'panel-' + targetTab);
+      });
+
+      if (targetTab === 'game') {
+        if (demoActive) stopDemo();
+        const canvas = document.getElementById('game-canvas');
+        const Game = (typeof window !== 'undefined' && window.ForemanGame);
+        if (Game && canvas && !gameInitialized) {
+          Game.initGame(canvas);
+          gameInitialized = true;
+        }
+      } else {
+        const Game = (typeof window !== 'undefined' && window.ForemanGame);
+        if (Game) Game.stopGame();
+      }
+    });
+  });
+
+  // Game start button
+  const gameStartBtn = document.getElementById('game-start-btn');
+  if (gameStartBtn) {
+    gameStartBtn.addEventListener('click', () => {
+      const Game = (typeof window !== 'undefined' && window.ForemanGame);
+      if (Game) Game.startGame();
+    });
+  }
+
+  // Arrow key handling for game
+  document.addEventListener('keydown', (e) => {
+    const gamePanel = document.getElementById('panel-game');
+    if (!gamePanel || !gamePanel.classList.contains('active')) return;
+    const Game = (typeof window !== 'undefined' && window.ForemanGame);
+    if (!Game) return;
+    const state = Game.getGameState();
+    if (!state || !state.active) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); Game.movePlayer('left'); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); Game.movePlayer('right'); }
+  });
 });
 
 if (typeof module !== 'undefined' && module.exports) {
