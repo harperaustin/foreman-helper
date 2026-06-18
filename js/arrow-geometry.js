@@ -1,3 +1,4 @@
+(function() {
 const ARROW_SIZE = 10;
 
 function tangentAngle(d) {
@@ -212,3 +213,4 @@ if (typeof module !== 'undefined' && module.exports) {
 } else if (typeof window !== 'undefined') {
   window.ArrowGeometry = { ARROW_SIZE, tangentAngle, computeArrowheadPoints, computeForwardPath, computeFeedbackPath, computeFeedbackLabelPosition };
 }
+})();

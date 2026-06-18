@@ -87,6 +87,34 @@ describe('startAnim / stopAnim lifecycle', () => {
   });
 });
 
+describe('shared scope integration', () => {
+  test('no redeclaration errors when all scripts load in same scope', () => {
+    const fs = require('fs');
+    const vm = require('vm');
+    const arrowSrc = fs.readFileSync('js/arrow-geometry.js', 'utf8');
+    const gameSrc = fs.readFileSync('js/game.js', 'utf8');
+    const bugSquashSrc = fs.readFileSync('js/bug-squash.js', 'utf8');
+    const context = vm.createContext({
+      document: { getElementById: () => ({ getContext: () => ({ clearRect(){}, fillRect(){}, fillText(){}, beginPath(){}, arc(){}, fill(){}, closePath(){}, moveTo(){}, lineTo(){}, stroke(){} }) }) },
+      window: {},
+      requestAnimationFrame: () => 1,
+      cancelAnimationFrame: () => {},
+      module: undefined,
+      setInterval: () => 1,
+      clearInterval: () => {},
+      Math: Math
+    });
+    expect(() => {
+      vm.runInContext(arrowSrc, context);
+      vm.runInContext(gameSrc, context);
+      vm.runInContext(bugSquashSrc, context);
+    }).not.toThrow();
+    expect(context.window.ForemanGame).toBeDefined();
+    expect(context.window.BugSquashAnim).toBeDefined();
+    expect(context.window.ArrowGeometry).toBeDefined();
+  });
+});
+
 describe('tick advances state', () => {
   test('tick in chase phase moves foreman toward bug', () => {
     BugSquash.startAnim();
