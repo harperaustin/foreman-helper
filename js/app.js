@@ -6,9 +6,9 @@ const ArrowGeometryModule = (typeof require !== 'undefined')
 const agents = [
   { id: 'researcher', name: 'Researcher', stage: 1, description: 'Deep codebase analysis', artifact: 'research-report.md', multiModel: false },
   { id: 'planner', name: 'Planner', stage: 2, description: 'Creates implementation plan from research', artifact: 'implementation-plan.md', multiModel: false },
-  { id: 'verifier', name: 'Verifier', stage: 3, description: 'Independent plan review', artifact: null, multiModel: true, outcomes: ['APPROVED', 'NEEDS_REVISION'] },
+  { id: 'verifier', name: 'Verifier', stage: 3, description: 'Independent plan review', artifact: null, multiModel: true, outcomes: ['APPROVED', 'NEEDS_REVISION'], models: ['claude', 'chatgpt', 'gemini'] },
   { id: 'implementer', name: 'Implementer', stage: 4, description: 'Executes the plan by making code changes', artifact: null, multiModel: false },
-  { id: 'validator', name: 'Validator', stage: 5, description: 'Verifies implementation, runs build/tests', artifact: 'implementation-issues.md', multiModel: true, outcomes: ['PASS', 'FAIL'] },
+  { id: 'validator', name: 'Validator', stage: 5, description: 'Verifies implementation, runs build/tests', artifact: 'implementation-issues.md', multiModel: true, outcomes: ['PASS', 'FAIL'], models: ['claude', 'chatgpt', 'gemini'] },
   { id: 'build-watcher', name: 'Build Watcher', stage: 6, description: 'Monitors CI after PR push', artifact: null, multiModel: false },
   { id: 'post-mortem', name: 'Post-Mortem', stage: 7, description: 'Pipeline aftercare and learnings', artifact: 'post-mortem-findings.md', multiModel: false },
 ];
@@ -124,6 +124,12 @@ function makeDraggable(node) {
   node.addEventListener('pointerdown', onPointerDown);
 }
 
+const modelLogos = {
+  claude: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#D97706"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-size="16" font-family="sans-serif">C</text></svg>',
+  chatgpt: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#10A37F"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-size="16" font-family="sans-serif">G</text></svg>',
+  gemini: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#4285F4"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-size="16" font-family="sans-serif">Gm</text></svg>',
+};
+
 const colorMap = {
   'researcher': 'var(--color-researcher)',
   'planner': 'var(--color-planner)',
@@ -152,7 +158,30 @@ function renderPipeline() {
       ${agent.artifact ? `<span class="artifact-badge">📄 ${agent.artifact}</span>` : ''}
     `;
 
-    node.addEventListener('click', () => showAgentDetail(agent.id));
+    if (agent.multiModel && agent.models) {
+      agent.models.forEach((model, mi) => {
+        const card = document.createElement('div');
+        card.className = 'model-card';
+        card.dataset.model = model;
+        card.style.setProperty('--card-index', mi);
+        card.innerHTML = `
+          <div class="model-card-front"></div>
+          <div class="model-card-back">${modelLogos[model] || ''}<span class="model-label">${model}</span></div>
+        `;
+        node.appendChild(card);
+      });
+    }
+
+    node.addEventListener('click', () => {
+      const panel = document.getElementById('agent-detail');
+      if (agent.multiModel && panel.classList.contains('visible') && panel.dataset.agentId === agent.id) {
+        node.classList.toggle('fanned');
+      } else {
+        document.querySelectorAll('.agent-node.fanned').forEach(n => n.classList.remove('fanned'));
+        panel.dataset.agentId = agent.id;
+        showAgentDetail(agent.id);
+      }
+    });
     container.appendChild(node);
 
     const savedOffset = dragOffsets.get(agent.id);
@@ -249,6 +278,7 @@ function showAgentDetail(agentId) {
   if (!agent) return;
 
   const panel = document.getElementById('agent-detail');
+  panel.dataset.agentId = agentId;
   panel.innerHTML = `
     <button class="close-btn" aria-label="Close">&times;</button>
     <h2 style="color: ${colorMap[agent.id]}">${agent.name}</h2>
@@ -281,6 +311,7 @@ function showAgentDetail(agentId) {
 
   panel.querySelector('.close-btn').addEventListener('click', () => {
     panel.classList.remove('visible');
+    document.querySelectorAll('.agent-node.fanned').forEach(n => n.classList.remove('fanned'));
   });
 }
 
@@ -300,10 +331,11 @@ document.addEventListener('DOMContentLoaded', () => {
         !panel.contains(e.target) &&
         !e.target.closest('.agent-node')) {
       panel.classList.remove('visible');
+      document.querySelectorAll('.agent-node.fanned').forEach(n => n.classList.remove('fanned'));
     }
   });
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, renderPipeline, renderArrows, showAgentDetail };
+  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, modelLogos, renderPipeline, renderArrows, showAgentDetail };
 }
