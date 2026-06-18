@@ -766,3 +766,18 @@ describe('demo toggle', () => {
    expect(document.querySelector('.demo-progress')).toBeNull();
   });
 });
+
+describe('Footer credit', () => {
+  beforeEach(() => {
+    const fs = require('fs');
+    const path = require('path');
+    const html = fs.readFileSync(path.resolve(__dirname, '..', 'index.html'), 'utf8');
+    document.documentElement.innerHTML = html;
+  });
+
+  test('footer displays "Created by Harper Austin"', () => {
+    const footer = document.querySelector('footer');
+    expect(footer).not.toBeNull();
+    expect(footer.textContent).toContain('Created by Harper Austin');
+  });
+});

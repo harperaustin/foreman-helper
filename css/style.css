@@ -664,6 +664,15 @@ body.theme-professional .demo-progress::after {
   animation: typing-cursor 1s steps(1) infinite;
 }
 
+/* Footer */
+footer {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--text-muted);
+  font-family: 'VT323', monospace;
+  font-size: 1.2rem;
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   body.demo-active .agent-node {
