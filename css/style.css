@@ -6,21 +6,23 @@
 }
 
 :root {
-  --color-researcher: #4A90D9;
-  --color-planner: #7B68EE;
-  --color-verifier: #E67E22;
-  --color-implementer: #27AE60;
-  --color-validator: #E74C3C;
-  --color-build-watcher: #F39C12;
-  --color-post-mortem: #8E44AD;
-  --bg: #1a1a2e;
-  --surface: #16213e;
-  --text: #e0e0e0;
-  --text-muted: #a0a0a0;
+  --color-researcher: #4a7c59;
+  --color-planner: #2e6ca8;
+  --color-verifier: #d4760a;
+  --color-implementer: #c7a020;
+  --color-validator: #b03030;
+  --color-build-watcher: #6b4c9a;
+  --color-post-mortem: #5c4033;
+  --bg: #1c1c1c;
+  --surface: #2a2520;
+  --text: #f0e8d8;
+  --text-muted: #a89880;
+  --accent: #f5c518;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -30,16 +32,40 @@ body {
 header {
   text-align: center;
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-mascot {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 0.5rem;
+  image-rendering: pixelated;
 }
 
 header h1 {
-  font-size: 1.8rem;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.2rem;
   margin-bottom: 0.5rem;
 }
 
 header p {
   color: var(--text-muted);
   font-size: 0.95rem;
+}
+
+.caution-stripe {
+  height: 8px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #f5c518,
+    #f5c518 10px,
+    #1c1c1c 10px,
+    #1c1c1c 20px
+  );
+  margin-bottom: 1.5rem;
+  image-rendering: pixelated;
 }
 
 main {
@@ -59,6 +85,18 @@ main {
   flex-wrap: nowrap;
 }
 
+#pipeline::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('../assets/foreman-mascot.svg') no-repeat center;
+  background-size: 180px;
+  opacity: 0.05;
+  pointer-events: none;
+  image-rendering: pixelated;
+  z-index: 0;
+}
+
 #pipeline svg.arrows-overlay {
   position: absolute;
   top: 0;
@@ -73,7 +111,7 @@ main {
 .agent-node {
   position: relative;
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: 3px;
   padding: 1.2rem 1rem;
   min-width: 130px;
   max-width: 150px;
@@ -81,16 +119,18 @@ main {
   cursor: grab;
   touch-action: none;
   border-left: 4px solid var(--node-color, #555);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(245,197,24,0.2);
+  border-left: 4px solid var(--node-color, #555);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
   transition: box-shadow 0.2s;
-  animation: fadeIn 0.4s ease-out both;
+  animation: fadeIn 0.4s steps(4) both;
   transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
   z-index: 1;
 }
 
 .agent-node:not(.dragging):hover {
   transform: translate(var(--drag-x, 0px), calc(var(--drag-y, 0px) - 4px));
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.6);
 }
 
 .agent-node.dragging {
@@ -106,7 +146,7 @@ main {
   right: -10px;
   width: 24px;
   height: 24px;
-  border-radius: 50%;
+  border-radius: 3px;
   background: var(--node-color, #555);
   color: #fff;
   font-size: 0.75rem;
@@ -132,7 +172,7 @@ main {
   margin-top: 0.6rem;
   display: inline-block;
   background: rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: 3px;
   padding: 0.2rem 0.5rem;
   font-size: 0.65rem;
   color: var(--text-muted);
@@ -149,7 +189,7 @@ main {
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: 12px;
+  border-radius: 3px;
   background: var(--surface);
   border-left: 4px solid var(--node-color, #555);
   z-index: -1;
@@ -176,7 +216,7 @@ main {
 .model-card-back {
   position: absolute;
   inset: 0;
-  border-radius: 12px;
+  border-radius: 3px;
   backface-visibility: hidden;
   display: flex;
   align-items: center;
@@ -187,6 +227,7 @@ main {
 .model-card-front {
   background: var(--surface);
   border-left: 4px solid var(--node-color, #555);
+  border-radius: 3px;
 }
 
 .model-card-back {
@@ -230,32 +271,32 @@ main {
 /* Arrow Styling */
 .arrow {
   fill: none;
-  stroke: #4a5568;
-  stroke-width: 2;
+  stroke: var(--accent);
+  stroke-width: 2.5;
   stroke-dasharray: 8 4;
   animation: flowPulse 1.5s linear infinite;
 }
 
 .arrow.feedback {
-  stroke: #e74c3c;
+  stroke: #b03030;
   stroke-dasharray: 6 6;
   stroke-width: 1.5;
   opacity: 0.8;
 }
 
 .arrowhead {
-  fill: #4a5568;
+  fill: var(--accent);
 }
 
 .arrowhead-feedback {
-  fill: #e74c3c;
+  fill: #b03030;
   opacity: 0.8;
 }
 
 /* Artifact Labels on Arrows */
 .artifact-label {
   font-size: 0.6rem;
-  fill: var(--text-muted);
+  fill: var(--text);
   text-anchor: middle;
   paint-order: stroke;
   stroke: var(--bg);
@@ -273,7 +314,8 @@ main {
   width: 320px;
   max-height: 80vh;
   background: var(--surface);
-  border-radius: 16px;
+  border-radius: 4px;
+  border-top: 6px solid var(--accent);
   padding: 2rem;
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
   transition: right 0.3s ease;
@@ -297,7 +339,8 @@ main {
 }
 
 #agent-detail h2 {
-  font-size: 1.3rem;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.8rem;
   margin-bottom: 0.5rem;
 }
 
@@ -307,7 +350,7 @@ main {
 
 #agent-detail .detail-section h3 {
   font-size: 0.85rem;
-  color: var(--text-muted);
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.3rem;
@@ -321,7 +364,7 @@ main {
 #agent-detail .outcome-pill {
   display: inline-block;
   padding: 0.25rem 0.6rem;
-  border-radius: 12px;
+  border-radius: 3px;
   font-size: 0.75rem;
   font-weight: 600;
   margin-right: 0.4rem;
@@ -345,8 +388,19 @@ main {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.agent-node .node-mascot {
+  position: absolute;
+  bottom: -8px;
+  left: -8px;
+  width: 24px;
+  height: 24px;
+  opacity: 0.6;
+  image-rendering: pixelated;
+  pointer-events: none;
 }
 
 /* Responsive */
