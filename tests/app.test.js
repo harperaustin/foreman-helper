@@ -558,3 +558,68 @@ describe('arrow rendering', () => {
     });
   });
 });
+
+describe('theme toggle', () => {
+  beforeEach(() => {
+   document.body.innerHTML = `
+     <header>
+       <img src="assets/foreman-mascot.svg" alt="Foreman mascot" class="header-mascot">
+       <div class="theme-toggle" role="group" aria-label="Theme selector">
+         <button class="theme-btn active" data-theme="dark" aria-pressed="true" title="Dark mode">🌙</button>
+         <button class="theme-btn" data-theme="light" aria-pressed="false" title="Light mode">☀️</button>
+         <button class="theme-btn" data-theme="colorful" aria-pressed="false" title="Colorful mode">🌈</button>
+       </div>
+     </header>
+     <main>
+       <div id="pipeline"></div>
+       <div id="agent-detail"></div>
+     </main>
+   `;
+   localStorage.clear();
+   jest.resetModules();
+  });
+
+  test('setTheme("light") adds theme-light class to body', () => {
+   const { setTheme } = loadApp();
+   setTheme('light');
+   expect(document.body.classList.contains('theme-light')).toBe(true);
+  });
+
+  test('setTheme("dark") removes theme classes from body', () => {
+   const { setTheme } = loadApp();
+   setTheme('light');
+   expect(document.body.classList.contains('theme-light')).toBe(true);
+   setTheme('dark');
+   expect(document.body.classList.contains('theme-light')).toBe(false);
+   expect(document.body.classList.contains('theme-colorful')).toBe(false);
+  });
+
+  test('setTheme updates mascot img src', () => {
+   const { setTheme } = loadApp();
+   setTheme('colorful');
+   const img = document.querySelector('img.header-mascot');
+   expect(img.getAttribute('src')).toBe('assets/foreman-mascot-colorful.svg');
+  });
+
+  test('setTheme persists to localStorage', () => {
+   const { setTheme } = loadApp();
+   setTheme('colorful');
+   expect(localStorage.getItem('foreman-theme')).toBe('colorful');
+  });
+
+  test('theme buttons get active class and aria-pressed', () => {
+   const { setTheme } = loadApp();
+   setTheme('light');
+
+   const lightBtn = document.querySelector('[data-theme="light"]');
+   const darkBtn = document.querySelector('[data-theme="dark"]');
+   const colorfulBtn = document.querySelector('[data-theme="colorful"]');
+
+   expect(lightBtn.classList.contains('active')).toBe(true);
+   expect(lightBtn.getAttribute('aria-pressed')).toBe('true');
+   expect(darkBtn.classList.contains('active')).toBe(false);
+   expect(darkBtn.getAttribute('aria-pressed')).toBe('false');
+   expect(colorfulBtn.classList.contains('active')).toBe(false);
+   expect(colorfulBtn.getAttribute('aria-pressed')).toBe('false');
+  });
+});

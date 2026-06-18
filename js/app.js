@@ -3,6 +3,45 @@ const ArrowGeometryModule = (typeof require !== 'undefined')
   ? require('./arrow-geometry.js')
   : (typeof window !== 'undefined' && window.ArrowGeometry);
 
+const THEME_MASCOTS = {
+  dark: 'assets/foreman-mascot.svg',
+  light: 'assets/foreman-mascot-light.svg',
+  colorful: 'assets/foreman-mascot-colorful.svg',
+};
+
+function setTheme(themeName) {
+  // Remove existing theme classes
+  document.body.classList.remove('theme-light', 'theme-colorful');
+  if (themeName !== 'dark') {
+    document.body.classList.add('theme-' + themeName);
+  }
+
+  // Update mascot images
+  var mascotSrc = THEME_MASCOTS[themeName] || THEME_MASCOTS.dark;
+  document.querySelectorAll('img.header-mascot, img.node-mascot').forEach(function(img) {
+    img.setAttribute('src', mascotSrc);
+  });
+
+  // Update #pipeline::before background via injected style
+  var styleEl = document.getElementById('theme-mascot-bg');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'theme-mascot-bg';
+    document.head.appendChild(styleEl);
+  }
+  styleEl.textContent = '#pipeline::before { background-image: url(\'' + mascotSrc + '\'); }';
+
+  // Persist preference
+  try { localStorage.setItem('foreman-theme', themeName); } catch (e) { /* ignore */ }
+
+  // Update button states
+  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+    var isActive = btn.getAttribute('data-theme') === themeName;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+}
+
 const agents = [
   { id: 'researcher', name: 'Researcher', stage: 1, description: 'Deep codebase analysis', artifact: 'research-report.md', multiModel: false },
   { id: 'planner', name: 'Planner', stage: 2, description: 'Creates implementation plan from research', artifact: 'implementation-plan.md', multiModel: false },
@@ -325,6 +364,21 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPipeline();
   window.addEventListener('resize', handleResize);
 
+  // Initialize theme
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('foreman-theme'); } catch (e) { /* ignore */ }
+  if (!savedTheme) {
+    savedTheme = (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  setTheme(savedTheme);
+
+  // Attach theme button listeners
+  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      setTheme(btn.getAttribute('data-theme'));
+    });
+  });
+
   // Close detail panel when clicking outside
   document.addEventListener('click', (e) => {
     const panel = document.getElementById('agent-detail');
@@ -338,5 +392,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, modelLogos, renderPipeline, renderArrows, showAgentDetail };
+  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, modelLogos, renderPipeline, renderArrows, showAgentDetail, setTheme, THEME_MASCOTS };
 }
