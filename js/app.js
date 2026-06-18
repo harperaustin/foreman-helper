@@ -655,6 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
   let gameInitialized = false;
+  let bugSquashInitialized = false;
 
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -675,9 +676,29 @@ document.addEventListener('DOMContentLoaded', () => {
           Game.initGame(canvas);
           gameInitialized = true;
         }
-      } else {
+        // Stop bug squash animation when switching to game
+        const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
+        if (BugSquash) BugSquash.stopAnim();
+      } else if (targetTab === 'bug-squash') {
+        if (demoActive) stopDemo();
+        const canvas = document.getElementById('bug-squash-canvas');
+        const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
+        if (BugSquash && canvas) {
+          if (!bugSquashInitialized) {
+            BugSquash.initAnim(canvas);
+            bugSquashInitialized = true;
+          }
+          BugSquash.startAnim();
+        }
+        // Stop game when switching away
         const Game = (typeof window !== 'undefined' && window.ForemanGame);
         if (Game) Game.stopGame();
+      } else {
+        // Pipeline tab or others — stop game and animation
+        const Game = (typeof window !== 'undefined' && window.ForemanGame);
+        if (Game) Game.stopGame();
+        const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
+        if (BugSquash) BugSquash.stopAnim();
       }
     });
   });

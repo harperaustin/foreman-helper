@@ -741,3 +741,13 @@ body.theme-professional .demo-progress::after {
   font-size: 0.7rem;
   color: var(--accent);
 }
+
+#bug-squash-canvas {
+  display: block;
+  margin: 1rem auto;
+  border: 3px solid var(--accent);
+  border-radius: 4px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #1a1a2e;
+}

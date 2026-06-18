@@ -766,3 +766,24 @@ describe('demo toggle', () => {
    expect(document.querySelector('.demo-progress')).toBeNull();
   });
 });
+
+describe('bug-squash tab DOM presence', () => {
+  beforeEach(() => {
+   document.body.innerHTML = require('fs').readFileSync(
+     require('path').resolve(__dirname, '../index.html'), 'utf8'
+   );
+  });
+
+  test('bug-squash tab button exists with correct text', () => {
+   const btn = document.querySelector('[data-tab="bug-squash"]');
+   expect(btn).not.toBeNull();
+   expect(btn.textContent).toContain('Bug Squash');
+  });
+
+  test('bug-squash panel and canvas exist', () => {
+   const panel = document.getElementById('panel-bug-squash');
+   expect(panel).not.toBeNull();
+   const canvas = document.getElementById('bug-squash-canvas');
+   expect(canvas).not.toBeNull();
+  });
+});
