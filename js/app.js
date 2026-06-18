@@ -156,6 +156,7 @@ function renderPipeline() {
       <div class="agent-name">${agent.name}</div>
       <div class="agent-desc">${agent.description}</div>
       ${agent.artifact ? `<span class="artifact-badge">📄 ${agent.artifact}</span>` : ''}
+      <img src="assets/foreman-mascot.svg" class="node-mascot" alt="" aria-hidden="true">
     `;
 
     if (agent.multiModel && agent.models) {
