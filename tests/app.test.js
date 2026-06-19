@@ -844,3 +844,17 @@ describe('bug-squash.js getFont theme detection', () => {
     expect(bugSquashJs).not.toContain("ctx.font = '16px \"Press Start 2P\"");
   });
 });
+
+describe('index.html title and subtitle', () => {
+  test('title is "Foreman" and subtitle is "Agent harness + infrastructure"', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+    // Parse with jsdom environment's DOMParser
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    expect(doc.querySelector('header h1').textContent).toBe('Foreman');
+    expect(doc.querySelector('header .header-subtitle').textContent).toBe('Agent harness + infrastructure');
+  });
+});
