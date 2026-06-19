@@ -28,6 +28,7 @@
     <button class="tab-btn active" data-tab="pipeline" role="tab" aria-selected="true" id="tab-pipeline" aria-controls="panel-pipeline">🏗️ Pipeline</button>
     <button class="tab-btn" data-tab="game" role="tab" aria-selected="false" id="tab-game" aria-controls="panel-game">🎮 Game</button>
     <button class="tab-btn" data-tab="bug-squash" role="tab" aria-selected="false" id="tab-bug-squash" aria-controls="panel-bug-squash">🐛 Bug Squash</button>
+    <button class="tab-btn" data-tab="dashboard" role="tab" aria-selected="false" id="tab-dashboard" aria-controls="panel-dashboard">📊 Dashboard</button>
   </nav>
   <main>
     <div id="panel-pipeline" class="tab-panel active" role="tabpanel" aria-labelledby="tab-pipeline">
@@ -45,10 +46,20 @@
       <p class="game-instructions">Watch the foreman take down a pesky bug!</p>
       <canvas id="bug-squash-canvas" width="480" height="300"></canvas>
     </div>
+    <div id="panel-dashboard" class="tab-panel" role="tabpanel" aria-labelledby="tab-dashboard">
+      <h2 class="dashboard-title">📊 Pipeline Registry</h2>
+      <p class="dashboard-subtitle">Live view of all pipelines from the Foreman SQLite registry</p>
+      <div class="refresh-bar-container">
+        <div class="refresh-countdown"><div class="refresh-countdown-bar"></div></div>
+        <span class="refresh-label">Auto-refresh: <span id="refresh-status">paused</span></span>
+      </div>
+      <div id="dashboard-table-container"></div>
+    </div>
   </main>
   <script defer src="js/arrow-geometry.js"></script>
   <script defer src="js/game.js"></script>
   <script defer src="js/bug-squash.js"></script>
+  <script defer src="js/dashboard.js"></script>
   <script src="js/app.js" defer></script>
 </body>
 </html>
