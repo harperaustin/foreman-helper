@@ -858,3 +858,156 @@ describe('index.html title and subtitle', () => {
     expect(doc.querySelector('header .header-subtitle').textContent).toBe('Agent harness + infrastructure');
   });
 });
+
+describe('mascot drag & walk-back behavior', () => {
+  function createMascot() {
+    const mascot = document.createElement('div');
+    mascot.id = 'draggable-mascot';
+    mascot.className = 'header-mascot-container';
+    mascot.style.setProperty('--drag-x', '0px');
+    mascot.style.setProperty('--drag-y', '0px');
+    mascot.setPointerCapture = jest.fn();
+    mascot.releasePointerCapture = jest.fn();
+    document.body.appendChild(mascot);
+    return mascot;
+  }
+
+  function fire(node, type, opts = {}) {
+    const defaults = { isPrimary: true, button: 0, clientX: 0, clientY: 0, pointerId: 1 };
+    const event = new PointerEvent(type, { ...defaults, ...opts, bubbles: true });
+    node.dispatchEvent(event);
+    return event;
+  }
+
+  test('initMascotDraggable returns null when no mascot present', () => {
+    const { initMascotDraggable } = loadApp();
+    expect(initMascotDraggable()).toBeNull();
+  });
+
+  test('dragging adds dragging class and updates drag offsets', () => {
+    const { initMascotDraggable } = loadApp();
+    const mascot = createMascot();
+    initMascotDraggable(mascot);
+
+    fire(mascot, 'pointerdown', { clientX: 100, clientY: 100 });
+    expect(mascot.classList.contains('dragging')).toBe(true);
+
+    fire(mascot, 'pointermove', { clientX: 150, clientY: 130 });
+    expect(mascot.style.getPropertyValue('--drag-x')).toBe('50px');
+    expect(mascot.style.getPropertyValue('--drag-y')).toBe('30px');
+  });
+
+  test('initMascotDraggable is idempotent', () => {
+    const { initMascotDraggable } = loadApp();
+    const mascot = createMascot();
+    const spy = jest.spyOn(mascot, 'addEventListener');
+    initMascotDraggable(mascot);
+    const callsAfterFirst = spy.mock.calls.length;
+    initMascotDraggable(mascot);
+    expect(spy.mock.calls.length).toBe(callsAfterFirst);
+    spy.mockRestore();
+  });
+
+  test('releasing after a drag triggers walk-back to origin', () => {
+    const { initMascotDraggable } = loadApp();
+    const mascot = createMascot();
+    initMascotDraggable(mascot);
+
+    fire(mascot, 'pointerdown', { clientX: 0, clientY: 0 });
+    fire(mascot, 'pointermove', { clientX: 100, clientY: 100 });
+    fire(mascot, 'pointerup', { clientX: 100, clientY: 100 });
+
+    expect(mascot.classList.contains('dragging')).toBe(false);
+    expect(mascot.classList.contains('walking-back')).toBe(true);
+    expect(mascot.style.transition).toMatch(/transform/);
+    // Walk-back targets the origin.
+    expect(mascot.style.getPropertyValue('--drag-x')).toBe('0px');
+    expect(mascot.style.getPropertyValue('--drag-y')).toBe('0px');
+  });
+
+  test('walk-back ends and clears class on transitionend', () => {
+    const { initMascotDraggable } = loadApp();
+    const mascot = createMascot();
+    initMascotDraggable(mascot);
+
+    fire(mascot, 'pointerdown', { clientX: 0, clientY: 0 });
+    fire(mascot, 'pointermove', { clientX: 80, clientY: 60 });
+    fire(mascot, 'pointerup', { clientX: 80, clientY: 60 });
+    expect(mascot.classList.contains('walking-back')).toBe(true);
+
+    mascot.dispatchEvent(new Event('transitionend'));
+    expect(mascot.classList.contains('walking-back')).toBe(false);
+    expect(mascot.style.transition).toBe('none');
+  });
+
+  test('releasing without moving does not start a walk-back', () => {
+    const { initMascotDraggable } = loadApp();
+    const mascot = createMascot();
+    initMascotDraggable(mascot);
+
+    fire(mascot, 'pointerdown', { clientX: 10, clientY: 10 });
+    fire(mascot, 'pointerup', { clientX: 10, clientY: 10 });
+
+    expect(mascot.classList.contains('walking-back')).toBe(false);
+    expect(mascot.style.getPropertyValue('--drag-x')).toBe('0px');
+  });
+
+  test('grabbing mid walk-back interrupts the transition and resumes drag', () => {
+    const { initMascotDraggable } = loadApp();
+    const mascot = createMascot();
+    initMascotDraggable(mascot);
+
+    // Simulate the mascot frozen mid-return via an active transform.
+    mascot.classList.add('walking-back');
+    mascot.style.transition = 'transform 2s linear';
+    mascot.style.transform = 'matrix(1, 0, 0, 1, 60, 80)';
+
+    fire(mascot, 'pointerdown', { clientX: 0, clientY: 0 });
+    expect(mascot.classList.contains('walking-back')).toBe(false);
+    expect(mascot.style.transition).toBe('none');
+    expect(mascot.classList.contains('dragging')).toBe(true);
+
+    // Drag continues relative to the captured (interrupted) position.
+    fire(mascot, 'pointermove', { clientX: 10, clientY: 5 });
+    expect(mascot.style.getPropertyValue('--drag-x')).toBe('70px');
+    expect(mascot.style.getPropertyValue('--drag-y')).toBe('85px');
+  });
+
+  test('non-primary and right-click pointers do not start a drag', () => {
+    const { initMascotDraggable } = loadApp();
+    const mascot = createMascot();
+    initMascotDraggable(mascot);
+
+    fire(mascot, 'pointerdown', { isPrimary: false, clientX: 5, clientY: 5 });
+    expect(mascot.classList.contains('dragging')).toBe(false);
+
+    fire(mascot, 'pointerdown', { button: 2, clientX: 5, clientY: 5 });
+    expect(mascot.classList.contains('dragging')).toBe(false);
+  });
+
+  describe('getTransformXY matrix parsing', () => {
+    test('parses 2D matrix translation', () => {
+      const { getTransformXY } = loadApp();
+      const el = document.createElement('div');
+      el.style.transform = 'matrix(1, 0, 0, 1, 42, 24)';
+      document.body.appendChild(el);
+      expect(getTransformXY(el)).toEqual({ x: 42, y: 24 });
+    });
+
+    test('parses 3D matrix3d translation', () => {
+      const { getTransformXY } = loadApp();
+      const el = document.createElement('div');
+      el.style.transform = 'matrix3d(1,0,0,0, 0,1,0,0, 0,0,1,0, 15,35,0,1)';
+      document.body.appendChild(el);
+      expect(getTransformXY(el)).toEqual({ x: 15, y: 35 });
+    });
+
+    test('returns origin for none/empty transform', () => {
+      const { getTransformXY } = loadApp();
+      const el = document.createElement('div');
+      document.body.appendChild(el);
+      expect(getTransformXY(el)).toEqual({ x: 0, y: 0 });
+      expect(getTransformXY(null)).toEqual({ x: 0, y: 0 });
+    });
+  });
+});

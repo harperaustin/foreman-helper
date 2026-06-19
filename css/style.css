@@ -19,6 +19,19 @@
   --text-muted: #a89880;
   --accent: #f5c518;
   --feedback-arrow: #b03030;
+  /* Mascot palette (dark theme) */
+  --mascot-hat: #f5c518;
+  --mascot-hat-shade: #d4a010;
+  --mascot-skin: #e8b87a;
+  --mascot-detail: #2c2416;
+  --mascot-body: #3d7ab5;
+  --mascot-straps: #2c5a8a;
+  --mascot-buckle: #f5c518;
+  --mascot-belt: #5c4033;
+  --mascot-belt-buckle: #7a6e5f;
+  --mascot-clipboard: #d4c9a8;
+  --mascot-clipboard-clip: #5c4033;
+  --mascot-boots: #5c4033;
 }
 
 body.theme-light {
@@ -28,6 +41,19 @@ body.theme-light {
   --text-muted: #5c5040;
   --accent: #d4760a;
   --feedback-arrow: #c0392b;
+  /* Mascot palette (light theme) */
+  --mascot-hat: #FF8C00;
+  --mascot-hat-shade: #cc7000;
+  --mascot-skin: #e8b87a;
+  --mascot-detail: #2c2416;
+  --mascot-body: #c2a968;
+  --mascot-straps: #a08848;
+  --mascot-buckle: #FF8C00;
+  --mascot-belt: #8b6914;
+  --mascot-belt-buckle: #a07c28;
+  --mascot-clipboard: #d4c9a8;
+  --mascot-clipboard-clip: #8b6914;
+  --mascot-boots: #a0785a;
 }
 
 body.theme-colorful {
@@ -44,6 +70,19 @@ body.theme-colorful {
   --color-validator: #ff5252;
   --color-build-watcher: #e040fb;
   --color-post-mortem: #7c4dff;
+  /* Mascot palette (colorful theme) */
+  --mascot-hat: #e040fb;
+  --mascot-hat-shade: #b030c8;
+  --mascot-skin: #e8b87a;
+  --mascot-detail: #2c2416;
+  --mascot-body: #00bcd4;
+  --mascot-straps: #0097a7;
+  --mascot-buckle: #76ff03;
+  --mascot-belt: #7c4dff;
+  --mascot-belt-buckle: #76ff03;
+  --mascot-clipboard: #d4c9a8;
+  --mascot-clipboard-clip: #7c4dff;
+  --mascot-boots: #7c4dff;
 }
 
 body {
@@ -63,11 +102,114 @@ header {
   align-items: center;
 }
 
-.header-mascot {
+.header-mascot-container {
   width: 64px;
   height: 64px;
   margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 50;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
+  will-change: transform;
+}
+
+.header-mascot-container.dragging {
+  cursor: grabbing;
+  z-index: 100;
+}
+
+.header-mascot-svg {
+  width: 64px;
+  height: 64px;
   image-rendering: pixelated;
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Limb pivot points so swings rotate naturally */
+.mascot-left-arm { transform-origin: 18px 32px; }
+.mascot-right-arm { transform-origin: 46px 32px; }
+.mascot-left-leg { transform-origin: 26px 50px; }
+.mascot-right-leg { transform-origin: 38px 50px; }
+
+.mascot-left-arm,
+.mascot-right-arm,
+.mascot-left-leg,
+.mascot-right-leg {
+  transform-box: fill-box;
+}
+
+body.theme-professional .header-mascot-container {
+  display: none;
+}
+
+/* Frantic flailing while being dragged */
+@keyframes mascot-arm-frantic {
+  0%   { transform: rotate(-45deg); }
+  50%  { transform: rotate(55deg); }
+  100% { transform: rotate(-45deg); }
+}
+
+@keyframes mascot-arm-frantic-alt {
+  0%   { transform: rotate(55deg); }
+  50%  { transform: rotate(-45deg); }
+  100% { transform: rotate(55deg); }
+}
+
+@keyframes mascot-leg-pedal {
+  0%   { transform: rotate(-35deg); }
+  50%  { transform: rotate(35deg); }
+  100% { transform: rotate(-35deg); }
+}
+
+@keyframes mascot-leg-pedal-alt {
+  0%   { transform: rotate(35deg); }
+  50%  { transform: rotate(-35deg); }
+  100% { transform: rotate(35deg); }
+}
+
+.header-mascot-container.dragging .mascot-left-arm {
+  animation: mascot-arm-frantic 0.28s linear infinite;
+}
+.header-mascot-container.dragging .mascot-right-arm {
+  animation: mascot-arm-frantic-alt 0.28s linear infinite;
+}
+.header-mascot-container.dragging .mascot-left-leg {
+  animation: mascot-leg-pedal 0.24s linear infinite;
+}
+.header-mascot-container.dragging .mascot-right-leg {
+  animation: mascot-leg-pedal-alt 0.24s linear infinite;
+}
+
+/* Calmer swing while walking back to the start */
+.header-mascot-container.walking-back .mascot-left-arm {
+  animation: mascot-arm-frantic 0.55s ease-in-out infinite;
+}
+.header-mascot-container.walking-back .mascot-right-arm {
+  animation: mascot-arm-frantic-alt 0.55s ease-in-out infinite;
+}
+.header-mascot-container.walking-back .mascot-left-leg {
+  animation: mascot-leg-pedal 0.5s ease-in-out infinite;
+}
+.header-mascot-container.walking-back .mascot-right-leg {
+  animation: mascot-leg-pedal-alt 0.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-mascot-container.dragging .mascot-left-arm,
+  .header-mascot-container.dragging .mascot-right-arm,
+  .header-mascot-container.dragging .mascot-left-leg,
+  .header-mascot-container.dragging .mascot-right-leg,
+  .header-mascot-container.walking-back .mascot-left-arm,
+  .header-mascot-container.walking-back .mascot-right-arm,
+  .header-mascot-container.walking-back .mascot-left-leg,
+  .header-mascot-container.walking-back .mascot-right-leg {
+    animation: none;
+  }
 }
 
 header h1 {

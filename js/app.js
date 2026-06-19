@@ -176,6 +176,154 @@ function makeDraggable(node) {
   node.addEventListener('pointerdown', onPointerDown);
 }
 
+// Parse the active translate offset from a computed transform string,
+// supporting both 2D `matrix(...)` and 3D `matrix3d(...)` forms. This lets us
+// capture the mascot's position mid-transition (e.g. while it walks back).
+function getTransformXY(element) {
+  if (!element) return { x: 0, y: 0 };
+  const view = element.ownerDocument && element.ownerDocument.defaultView;
+  const computed = (view && view.getComputedStyle) ? view.getComputedStyle(element) : null;
+  let transform = '';
+  if (computed) {
+    transform = computed.transform || computed.webkitTransform || '';
+  }
+  if (!transform && element.style) {
+    transform = element.style.transform || '';
+  }
+  if (!transform || transform === 'none') {
+    return { x: 0, y: 0 };
+  }
+
+  const matrix3d = transform.match(/matrix3d\(([^)]+)\)/);
+  if (matrix3d) {
+    const values = matrix3d[1].split(',').map(v => parseFloat(v.trim()));
+    return { x: values[12] || 0, y: values[13] || 0 };
+  }
+
+  const matrix = transform.match(/matrix\(([^)]+)\)/);
+  if (matrix) {
+    const values = matrix[1].split(',').map(v => parseFloat(v.trim()));
+    return { x: values[4] || 0, y: values[5] || 0 };
+  }
+
+  return { x: 0, y: 0 };
+}
+
+// Resolve the mascot's current visual offset, preferring the live computed
+// transform (accurate during transitions) and falling back to the stored
+// drag custom properties when no transform is resolvable.
+function getMascotPosition(element) {
+  const fromTransform = getTransformXY(element);
+  if (fromTransform.x !== 0 || fromTransform.y !== 0) {
+    return fromTransform;
+  }
+  const x = parseFloat(element.style.getPropertyValue('--drag-x')) || 0;
+  const y = parseFloat(element.style.getPropertyValue('--drag-y')) || 0;
+  return { x, y };
+}
+
+// Make the header mascot draggable anywhere on the page. On release it "walks"
+// back to its origin, swinging its limbs along the way. Grabbing it mid-return
+// interrupts the walk-back smoothly.
+function initMascotDraggable(mascot) {
+  mascot = mascot || (typeof document !== 'undefined' && document.getElementById('draggable-mascot'));
+  if (!mascot) return null;
+  if (mascot.dataset.mascotDragInit === 'true') return mascot;
+  mascot.dataset.mascotDragInit = 'true';
+
+  let startX = 0, startY = 0, originX = 0, originY = 0;
+  let dragging = false;
+
+  function setPosition(x, y) {
+    mascot.style.setProperty('--drag-x', `${x}px`);
+    mascot.style.setProperty('--drag-y', `${y}px`);
+  }
+
+  function finishWalkBack(ev) {
+    if (ev && ev.propertyName && ev.propertyName !== 'transform') return;
+    mascot.classList.remove('walking-back');
+    mascot.style.transition = 'none';
+    mascot.removeEventListener('transitionend', finishWalkBack);
+  }
+
+  function onPointerMove(e) {
+    if (!e.isPrimary || !dragging) return;
+    const x = e.clientX - startX + originX;
+    const y = e.clientY - startY + originY;
+    setPosition(x, y);
+  }
+
+  function detachMoveListeners() {
+    mascot.removeEventListener('pointermove', onPointerMove);
+    mascot.removeEventListener('pointerup', onPointerUp);
+    mascot.removeEventListener('pointercancel', onPointerUp);
+    mascot.removeEventListener('lostpointercapture', onPointerUp);
+  }
+
+  function onPointerUp(e) {
+    if (e && e.isPrimary === false) return;
+    if (!dragging) return;
+    dragging = false;
+
+    detachMoveListeners();
+    mascot.classList.remove('dragging');
+
+    const current = getMascotPosition(mascot);
+    const distance = Math.hypot(current.x, current.y);
+
+    if (distance < 1) {
+      mascot.style.transition = 'none';
+      mascot.classList.remove('walking-back');
+      setPosition(0, 0);
+      return;
+    }
+
+    // Walk back to the origin with a duration proportional to the distance
+    // travelled, so a far-flung mascot takes longer to amble home.
+    const duration = Math.min(4, Math.max(0.4, distance / 200));
+    setPosition(current.x, current.y);
+    mascot.classList.add('walking-back');
+    // Force a reflow so the browser registers the starting position before the
+    // transition to the origin begins.
+    void mascot.offsetWidth;
+    mascot.style.transition = `transform ${duration}s linear`;
+    setPosition(0, 0);
+    mascot.addEventListener('transitionend', finishWalkBack);
+  }
+
+  function onPointerDown(e) {
+    if (!e.isPrimary || e.button !== 0) return;
+    e.preventDefault();
+
+    // Interrupt any in-progress walk-back without jumping: freeze the mascot at
+    // its current computed position and drop the transition.
+    const current = getMascotPosition(mascot);
+    mascot.removeEventListener('transitionend', finishWalkBack);
+    mascot.style.transition = 'none';
+    mascot.classList.remove('walking-back');
+    setPosition(current.x, current.y);
+
+    originX = current.x;
+    originY = current.y;
+    startX = e.clientX;
+    startY = e.clientY;
+    dragging = true;
+
+    mascot.classList.add('dragging');
+    if (mascot.setPointerCapture) {
+      try { mascot.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    }
+
+    mascot.addEventListener('pointermove', onPointerMove);
+    mascot.addEventListener('pointerup', onPointerUp);
+    mascot.addEventListener('pointercancel', onPointerUp);
+    mascot.addEventListener('lostpointercapture', onPointerUp);
+  }
+
+  mascot.addEventListener('pointerdown', onPointerDown);
+  return mascot;
+}
+
 const modelLogos = {
   claude: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#D97706"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-size="16" font-family="sans-serif">C</text></svg>',
   chatgpt: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#10A37F"/><text x="20" y="26" text-anchor="middle" fill="#fff" font-size="16" font-family="sans-serif">G</text></svg>',
@@ -611,6 +759,7 @@ function handleResize() {
 
 document.addEventListener('DOMContentLoaded', () => {
   renderPipeline();
+  initMascotDraggable();
   window.addEventListener('resize', handleResize);
 
   // Initialize theme
@@ -778,5 +927,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, modelLogos, renderPipeline, renderArrows, showAgentDetail, setTheme, THEME_MASCOTS, VALID_THEMES, PROFESSIONAL_DEMO_SCENES, runProfessionalDemo, startDemo, stopDemo, demoActive: () => demoActive, harnessInitialized: () => harnessInitialized };
+  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, initMascotDraggable, getTransformXY, modelLogos, renderPipeline, renderArrows, showAgentDetail, setTheme, THEME_MASCOTS, VALID_THEMES, PROFESSIONAL_DEMO_SCENES, runProfessionalDemo, startDemo, stopDemo, demoActive: () => demoActive, harnessInitialized: () => harnessInitialized };
 }
