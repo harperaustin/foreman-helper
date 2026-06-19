@@ -656,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabPanels = document.querySelectorAll('.tab-panel');
   let gameInitialized = false;
   let bugSquashInitialized = false;
-  let dashboardInitialized = false;
+  let harnessInitialized = false;
   let snakeInitialized = false;
 
   tabBtns.forEach(btn => {
@@ -681,8 +681,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Stop bug squash animation when switching to game
         const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
         if (BugSquash) BugSquash.stopAnim();
-        const Dashboard = (typeof window !== 'undefined' && window.ForemanDashboard);
-        if (Dashboard) Dashboard.stopAutoRefresh();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
       } else if (targetTab === 'snake') {
@@ -698,8 +696,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Game) Game.stopGame();
         const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
         if (BugSquash) BugSquash.stopAnim();
-        const Dashboard = (typeof window !== 'undefined' && window.ForemanDashboard);
-        if (Dashboard) Dashboard.stopAutoRefresh();
       } else if (targetTab === 'bug-squash') {
         if (demoActive) stopDemo();
         const canvas = document.getElementById('bug-squash-canvas');
@@ -714,22 +710,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Stop game when switching away
         const Game = (typeof window !== 'undefined' && window.ForemanGame);
         if (Game) Game.stopGame();
-        const Dashboard = (typeof window !== 'undefined' && window.ForemanDashboard);
-        if (Dashboard) Dashboard.stopAutoRefresh();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
-      } else if (targetTab === 'dashboard') {
+      } else if (targetTab === 'harness') {
         if (demoActive) stopDemo();
-        const Dashboard = (typeof window !== 'undefined' && window.ForemanDashboard);
-        if (Dashboard) {
-          if (!dashboardInitialized) {
-            const container = document.getElementById('dashboard-table-container');
-            if (container) Dashboard.renderDashboard(container);
-            dashboardInitialized = true;
-          }
-          Dashboard.startAutoRefresh();
+        const Harness = (typeof window !== 'undefined' && window.ForemanHarness);
+        if (Harness && !harnessInitialized) {
+          const container = document.getElementById('harness-container');
+          if (container) Harness.renderHarness(container);
+          harnessInitialized = true;
         }
-        // Stop game and bug-squash
         const Game = (typeof window !== 'undefined' && window.ForemanGame);
         if (Game) Game.stopGame();
         const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
@@ -742,8 +732,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Game) Game.stopGame();
         const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
         if (BugSquash) BugSquash.stopAnim();
-        const Dashboard = (typeof window !== 'undefined' && window.ForemanDashboard);
-        if (Dashboard) Dashboard.stopAutoRefresh();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
       }
@@ -790,5 +778,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, modelLogos, renderPipeline, renderArrows, showAgentDetail, setTheme, THEME_MASCOTS, VALID_THEMES, PROFESSIONAL_DEMO_SCENES, runProfessionalDemo, startDemo, stopDemo, demoActive: () => demoActive, dashboardInitialized: () => dashboardInitialized };
+  module.exports = { agents, feedbackLoops, dragOffsets, makeDraggable, modelLogos, renderPipeline, renderArrows, showAgentDetail, setTheme, THEME_MASCOTS, VALID_THEMES, PROFESSIONAL_DEMO_SCENES, runProfessionalDemo, startDemo, stopDemo, demoActive: () => demoActive, harnessInitialized: () => harnessInitialized };
 }
