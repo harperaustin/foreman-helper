@@ -888,6 +888,176 @@ body.theme-professional .harness-subtitle {
 
 @keyframes harness-blink { to { opacity: 0.3; } }
 
+/* Profile Feature */
+#profile-container {
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.profile-form,
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 4px solid var(--accent);
+  box-shadow: 6px 6px 0 var(--accent);
+}
+
+.profile-form-title,
+.profile-card-title {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  color: var(--accent);
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.profile-input {
+  font-family: 'VT323', monospace;
+  font-size: 1.2rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  outline: none;
+}
+
+.profile-input:focus {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.profile-btn {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.7rem;
+  padding: 0.7rem 1rem;
+  background: var(--accent);
+  color: var(--bg);
+  border: 2px solid var(--accent);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+  transition: transform 0.05s ease;
+}
+
+.profile-btn:hover:not(:disabled) {
+  transform: translate(1px, 1px);
+}
+
+.profile-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profile-link {
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.profile-link:hover {
+  color: var(--accent);
+}
+
+.profile-username,
+.profile-since {
+  font-family: 'VT323', monospace;
+  font-size: 1.2rem;
+  color: var(--text);
+}
+
+.profile-label {
+  color: var(--text-muted);
+}
+
+.error-banner,
+.success-banner {
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid;
+  text-align: center;
+}
+
+.error-banner {
+  color: #fff;
+  background: #b03030;
+  border-color: #ff5252;
+}
+
+.success-banner {
+  color: #06280f;
+  background: #4caf50;
+  border-color: #2e7d32;
+}
+
+@media (max-width: 600px) {
+  #profile-container {
+    margin: 1rem auto;
+  }
+  .profile-form,
+  .profile-card {
+    padding: 1rem;
+    box-shadow: 4px 4px 0 var(--accent);
+  }
+  .profile-form-title,
+  .profile-card-title {
+    font-size: 0.8rem;
+  }
+}
+
+/* Profile — Professional theme overrides */
+body.theme-professional .profile-form,
+body.theme-professional .profile-card {
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  background: var(--surface);
+}
+
+body.theme-professional .profile-form-title,
+body.theme-professional .profile-card-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 1.3rem;
+  color: var(--text);
+}
+
+body.theme-professional .profile-input {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.95rem;
+  border: 1px solid #444;
+  border-radius: 6px;
+}
+
+body.theme-professional .profile-btn {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-professional .profile-username,
+body.theme-professional .profile-since,
+body.theme-professional .profile-link,
+body.theme-professional .error-banner,
+body.theme-professional .success-banner {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+body.theme-professional .error-banner,
+body.theme-professional .success-banner {
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   body.demo-active .agent-node {

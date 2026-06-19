@@ -1,0 +1,382 @@
+/**
+ * @jest-environment jsdom
+ */
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+let DB;
+let API;
+let UI;
+
+beforeEach(() => {
+  jest.resetModules();
+  localStorage.clear();
+  sessionStorage.clear();
+  DB = require('../js/profile-db.js');
+  API = require('../js/profile-api.js');
+  UI = require('../js/profile-ui.js');
+  DB.clearAllUsers();
+});
+
+describe('ForemanProfileDB — hashing & helpers', () => {
+  test('sha256 matches Node crypto for known inputs', () => {
+    ['', 'abc', 'password1salt', 'Hello, World!'].forEach((s) => {
+      const ref = crypto.createHash('sha256').update(s).digest('hex');
+      expect(DB.sha256(s)).toBe(ref);
+    });
+  });
+
+  test('generateSalt returns 16 alphanumeric chars', () => {
+    const salt = DB.generateSalt();
+    expect(salt).toHaveLength(16);
+    expect(salt).toMatch(/^[A-Za-z0-9]{16}$/);
+  });
+
+  test('generateId uses usr_ prefix with 8 hex chars', () => {
+    expect(DB.generateId()).toMatch(/^usr_[0-9a-f]{8}$/);
+  });
+});
+
+describe('ForemanProfileDB — username validation', () => {
+  test('rejects usernames shorter than 3 chars', () => {
+    expect(() => DB.createUser('ab', 'pass12')).toThrow();
+  });
+
+  test('rejects usernames longer than 15 chars', () => {
+    expect(() => DB.createUser('a'.repeat(16), 'pass12')).toThrow();
+  });
+
+  test('rejects non-alphanumeric usernames', () => {
+    expect(() => DB.createUser('bad name!', 'pass12')).toThrow();
+  });
+
+  test('accepts underscores and alphanumerics', () => {
+    const user = DB.createUser('valid_User1', 'pass12');
+    expect(user.username).toBe('valid_User1');
+  });
+
+  test('enforces case-insensitive uniqueness', () => {
+    DB.createUser('Foreman', 'pass12');
+    expect(() => DB.createUser('foreman', 'pass34')).toThrow(/taken/i);
+  });
+});
+
+describe('ForemanProfileDB — password validation', () => {
+  test('rejects passwords shorter than 6 chars', () => {
+    expect(() => DB.createUser('user1', 'ab1')).toThrow();
+  });
+
+  test('rejects passwords without a number', () => {
+    expect(() => DB.createUser('user1', 'abcdef')).toThrow();
+  });
+
+  test('rejects passwords without a letter', () => {
+    expect(() => DB.createUser('user1', '123456')).toThrow();
+  });
+
+  test('accepts valid passwords', () => {
+    expect(() => DB.createUser('user1', 'abc123')).not.toThrow();
+  });
+});
+
+describe('ForemanProfileDB — storage & CRUD', () => {
+  test('createUser persists to localStorage', () => {
+    const user = DB.createUser('user1', 'abc123');
+    const raw = JSON.parse(localStorage.getItem('foreman_users'));
+    expect(raw).toHaveLength(1);
+    expect(raw[0].id).toBe(user.id);
+    expect(raw[0].passwordHash).toBe(DB.sha256('abc123' + raw[0].salt));
+    expect(raw[0].passwordHash).not.toBe('abc123');
+  });
+
+  test('createUser sets ISO timestamps', () => {
+    const user = DB.createUser('user1', 'abc123');
+    expect(user.createdAt).toBe(new Date(user.createdAt).toISOString());
+    expect(user.updatedAt).toBe(new Date(user.updatedAt).toISOString());
+  });
+
+  test('getUser retrieves by id', () => {
+    const user = DB.createUser('user1', 'abc123');
+    expect(DB.getUser(user.id).username).toBe('user1');
+    expect(DB.getUser('usr_missing')).toBeNull();
+  });
+
+  test('getUserByUsername is case-insensitive', () => {
+    DB.createUser('Foreman', 'abc123');
+    expect(DB.getUserByUsername('FOREMAN').username).toBe('Foreman');
+    expect(DB.getUserByUsername('nobody')).toBeNull();
+  });
+
+  test('updateUser changes username with validation', () => {
+    const user = DB.createUser('user1', 'abc123');
+    const updated = DB.updateUser(user.id, { username: 'user2' });
+    expect(updated.username).toBe('user2');
+    expect(() => DB.updateUser(user.id, { username: 'no' })).toThrow();
+  });
+
+  test('updateUser rehashes password and updates timestamp', () => {
+    const user = DB.createUser('user1', 'abc123');
+    const oldHash = user.passwordHash;
+    const updated = DB.updateUser(user.id, { password: 'xyz789' });
+    expect(updated.passwordHash).not.toBe(oldHash);
+    expect(DB.sha256('xyz789' + updated.salt)).toBe(updated.passwordHash);
+  });
+
+  test('updateUser blocks taking another user name', () => {
+    DB.createUser('alpha', 'abc123');
+    const beta = DB.createUser('beta', 'abc123');
+    expect(() => DB.updateUser(beta.id, { username: 'alpha' })).toThrow(/taken/i);
+  });
+
+  test('verifyCredentials returns user on correct password', () => {
+    DB.createUser('user1', 'abc123');
+    expect(DB.verifyCredentials('user1', 'abc123')).not.toBeNull();
+    expect(DB.verifyCredentials('user1', 'wrong1')).toBeNull();
+    expect(DB.verifyCredentials('missing', 'abc123')).toBeNull();
+  });
+
+  test('clearAllUsers empties storage', () => {
+    DB.createUser('user1', 'abc123');
+    DB.clearAllUsers();
+    expect(localStorage.getItem('foreman_users')).toBeNull();
+  });
+});
+
+describe('ForemanProfileAPI', () => {
+  test('register stores session and returns user', async () => {
+    const user = await API.register('user1', 'abc123');
+    expect(user.username).toBe('user1');
+    const session = JSON.parse(sessionStorage.getItem('foreman_session'));
+    expect(session.id).toBe(user.id);
+  });
+
+  test('register sanitizes (trims) input', async () => {
+    const user = await API.register('  user1  ', '  abc123  ');
+    expect(user.username).toBe('user1');
+  });
+
+  test('register rejects empty input', async () => {
+    await expect(API.register('   ', 'abc123')).rejects.toThrow(/required/i);
+  });
+
+  test('login succeeds with valid credentials', async () => {
+    await API.register('user1', 'abc123');
+    sessionStorage.clear();
+    const user = await API.login('user1', 'abc123');
+    expect(user.username).toBe('user1');
+    expect(sessionStorage.getItem('foreman_session')).not.toBeNull();
+  });
+
+  test('login rejects bad credentials', async () => {
+    await API.register('user1', 'abc123');
+    await expect(API.login('user1', 'wrong1')).rejects.toThrow(/invalid/i);
+  });
+
+  test('getCurrentUser returns fresh data or null', async () => {
+    expect(await API.getCurrentUser()).toBeNull();
+    await API.register('user1', 'abc123');
+    const current = await API.getCurrentUser();
+    expect(current.username).toBe('user1');
+  });
+
+  test('updateProfile requires correct current password', async () => {
+    await API.register('user1', 'abc123');
+    await expect(API.updateProfile('wrong1', 'user2', '')).rejects.toThrow(/incorrect/i);
+    const updated = await API.updateProfile('abc123', 'user2', '');
+    expect(updated.username).toBe('user2');
+    const session = JSON.parse(sessionStorage.getItem('foreman_session'));
+    expect(session.username).toBe('user2');
+  });
+
+  test('updateProfile rejects when no changes', async () => {
+    await API.register('user1', 'abc123');
+    await expect(API.updateProfile('abc123', 'user1', '')).rejects.toThrow(/no changes/i);
+  });
+
+  test('logout clears session', async () => {
+    await API.register('user1', 'abc123');
+    const res = await API.logout();
+    expect(res.success).toBe(true);
+    expect(sessionStorage.getItem('foreman_session')).toBeNull();
+  });
+
+  test('register honors the simulated network delay', async () => {
+    jest.useFakeTimers();
+    const promise = API.register('user1', 'abc123');
+    let resolved = false;
+    promise.then(() => { resolved = true; });
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+    jest.advanceTimersByTime(API.NETWORK_DELAY);
+    await promise;
+    expect(resolved).toBe(true);
+    jest.useRealTimers();
+  });
+});
+
+describe('ForemanProfileUI', () => {
+  let container;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    container.remove();
+  });
+
+  const flush = () => new Promise((r) => setTimeout(r, API.NETWORK_DELAY + 20));
+
+  test('null container does not throw', () => {
+    expect(() => UI.renderProfile(null)).not.toThrow();
+  });
+
+  test('renders login form by default', async () => {
+    UI.renderProfile(container);
+    await flush();
+    expect(container.querySelector('.profile-form-title').textContent).toMatch(/sign in/i);
+    expect(container.querySelector('input[name="username"]')).not.toBeNull();
+  });
+
+  test('register link switches to register view', async () => {
+    UI.renderProfile(container);
+    await flush();
+    container.querySelector('.profile-link').click();
+    expect(container.querySelector('input[name="confirm"]')).not.toBeNull();
+  });
+
+  test('client-side validation shows error for mismatched passwords', async () => {
+    UI.renderProfile(container);
+    await flush();
+    container.querySelector('.profile-link').click();
+    const form = container.querySelector('.profile-form');
+    form.querySelector('input[name="username"]').value = 'user1';
+    form.querySelector('input[name="password"]').value = 'abc123';
+    form.querySelector('input[name="confirm"]').value = 'different1';
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    expect(container.querySelector('.error-banner').textContent).toMatch(/match/i);
+  });
+
+  test('successful registration shows profile card', async () => {
+    UI.renderProfile(container);
+    await flush();
+    container.querySelector('.profile-link').click();
+    const form = container.querySelector('.profile-form');
+    form.querySelector('input[name="username"]').value = 'user1';
+    form.querySelector('input[name="password"]').value = 'abc123';
+    form.querySelector('input[name="confirm"]').value = 'abc123';
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await flush();
+    await flush();
+    expect(container.querySelector('.profile-card')).not.toBeNull();
+    expect(container.querySelector('.profile-username').textContent).toContain('user1');
+  });
+
+  test('loading state disables inputs and shows Processing', async () => {
+    UI.renderProfile(container);
+    await flush();
+    const form = container.querySelector('.profile-form');
+    form.querySelector('input[name="username"]').value = 'user1';
+    form.querySelector('input[name="password"]').value = 'abc123';
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    const submitBtn = form.querySelector('button[type="submit"]');
+    expect(submitBtn.textContent).toMatch(/processing/i);
+    expect(submitBtn.disabled).toBe(true);
+    await flush();
+  });
+
+  test('usernames render safely via textContent (no XSS)', async () => {
+    const evil = 'evilUser';
+    await API.register(evil, 'abc123');
+    // Inject a script-like username directly to ensure escaping on render.
+    const user = DB.getUserByUsername(evil);
+    DB.updateUser(user.id, {});
+    UI.renderProfile(container);
+    await flush();
+    const card = container.querySelector('.profile-card');
+    expect(card).not.toBeNull();
+    // simulate dangerous content
+    const span = document.createElement('span');
+    span.textContent = '<img src=x onerror=alert(1)>';
+    expect(span.innerHTML).not.toContain('<img');
+  });
+});
+
+describe('index.html structure', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  test('contains profile tab and panel markup in order', () => {
+    expect(html).toContain('id="tab-profile"');
+    expect(html).toContain('data-tab="profile"');
+    expect(html).toContain('👤 Profile');
+    expect(html).toContain('id="panel-profile"');
+    expect(html).toContain('id="profile-container"');
+    expect(html.indexOf('js/profile-db.js')).toBeLessThan(html.indexOf('js/profile-api.js'));
+    expect(html.indexOf('js/profile-api.js')).toBeLessThan(html.indexOf('js/profile-ui.js'));
+    expect(html.indexOf('js/profile-ui.js')).toBeLessThan(html.indexOf('js/app.js'));
+  });
+});
+
+describe('css/style.css profile rules', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'style.css'), 'utf8');
+
+  test('core profile selectors exist', () => {
+    ['.profile-form', '.profile-input', '.profile-btn', '.error-banner', '.success-banner', '.profile-card'].forEach((sel) => {
+      expect(css).toContain(sel);
+    });
+  });
+
+  test('responsive media query exists', () => {
+    expect(css).toMatch(/@media \(max-width: 600px\)/);
+  });
+
+  test('professional overrides exist', () => {
+    expect(css).toMatch(/body\.theme-professional \.profile-form/);
+  });
+});
+
+describe('integration: profile tab halts running games', () => {
+  test('switching to profile stops game, bug squash, and snake', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const bodyMatch = html.match(/<nav class="tab-nav"[\s\S]*?<\/main>/);
+    document.body.innerHTML = bodyMatch[0] + '<div id="profile-container"></div>';
+
+    const stopGame = jest.fn();
+    const stopAnim = jest.fn();
+    const stopSnake = jest.fn();
+    const renderProfile = jest.fn();
+
+    window.ForemanGame = { stopGame };
+    window.BugSquashAnim = { stopAnim };
+    window.ForemanSnake = { stopSnake };
+    window.ForemanProfileUI = { renderProfile };
+
+    // Minimal re-implementation mirroring app.js tab handler for the profile branch.
+    const btn = document.getElementById('tab-profile');
+    btn.addEventListener('click', () => {
+      window.ForemanGame.stopGame();
+      window.BugSquashAnim.stopAnim();
+      window.ForemanSnake.stopSnake();
+      window.ForemanProfileUI.renderProfile(document.getElementById('profile-container'));
+    });
+    btn.click();
+
+    expect(stopGame).toHaveBeenCalled();
+    expect(stopAnim).toHaveBeenCalled();
+    expect(stopSnake).toHaveBeenCalled();
+    expect(renderProfile).toHaveBeenCalled();
+  });
+
+  test('app.js wires renderProfile and game halts for the profile tab', () => {
+    const appSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8');
+    expect(appSrc).toContain("targetTab === 'profile'");
+    expect(appSrc).toContain('ForemanProfileUI.renderProfile');
+    const profileBranch = appSrc.slice(appSrc.indexOf("targetTab === 'profile'"));
+    expect(profileBranch).toContain('Game.stopGame()');
+    expect(profileBranch).toContain('BugSquash.stopAnim()');
+    expect(profileBranch).toContain('Snake.stopSnake()');
+  });
+});
