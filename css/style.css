@@ -703,6 +703,15 @@ body.theme-professional .status-badge {
   border-radius: 12px;
 }
 
+body.theme-professional .snake-leaderboard h3 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+body.theme-professional #snake-canvas {
+  border-color: #333;
+  image-rendering: auto;
+}
+
 /* Dashboard Styles */
 .dashboard-title {
   font-family: 'Press Start 2P', cursive;
@@ -971,4 +980,54 @@ body.theme-professional .status-badge {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   background: #1a1a2e;
+}
+
+/* Snake Game Styles */
+#snake-canvas {
+  display: block;
+  margin: 0 auto;
+  background: #111;
+  border: 3px solid var(--accent);
+  max-width: 100%;
+  image-rendering: pixelated;
+}
+
+.snake-leaderboard {
+  max-width: 480px;
+  margin: 1.5rem auto;
+  padding: 1rem;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+}
+
+.snake-leaderboard h3 {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.snake-leaderboard ol {
+  list-style: none;
+  counter-reset: lb;
+  padding: 0;
+}
+
+.snake-leaderboard li {
+  counter-increment: lb;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--text-muted);
+  color: var(--text);
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.snake-leaderboard li::before {
+  content: counter(lb) ". ";
+  color: var(--accent);
+  font-weight: bold;
+  margin-right: 0.5rem;
 }

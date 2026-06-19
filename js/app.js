@@ -657,6 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let gameInitialized = false;
   let bugSquashInitialized = false;
   let dashboardInitialized = false;
+  let snakeInitialized = false;
 
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -682,6 +683,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (BugSquash) BugSquash.stopAnim();
         const Dashboard = (typeof window !== 'undefined' && window.ForemanDashboard);
         if (Dashboard) Dashboard.stopAutoRefresh();
+        const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
+        if (Snake) Snake.stopSnake();
+      } else if (targetTab === 'snake') {
+        if (demoActive) stopDemo();
+        const snakeCanvas = document.getElementById('snake-canvas');
+        const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
+        if (Snake && snakeCanvas && !snakeInitialized) {
+          Snake.initSnake(snakeCanvas);
+          snakeInitialized = true;
+        }
+        // Stop other games
+        const Game = (typeof window !== 'undefined' && window.ForemanGame);
+        if (Game) Game.stopGame();
+        const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
+        if (BugSquash) BugSquash.stopAnim();
+        const Dashboard = (typeof window !== 'undefined' && window.ForemanDashboard);
+        if (Dashboard) Dashboard.stopAutoRefresh();
       } else if (targetTab === 'bug-squash') {
         if (demoActive) stopDemo();
         const canvas = document.getElementById('bug-squash-canvas');
@@ -698,6 +716,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Game) Game.stopGame();
         const Dashboard = (typeof window !== 'undefined' && window.ForemanDashboard);
         if (Dashboard) Dashboard.stopAutoRefresh();
+        const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
+        if (Snake) Snake.stopSnake();
       } else if (targetTab === 'dashboard') {
         if (demoActive) stopDemo();
         const Dashboard = (typeof window !== 'undefined' && window.ForemanDashboard);
@@ -714,6 +734,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Game) Game.stopGame();
         const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
         if (BugSquash) BugSquash.stopAnim();
+        const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
+        if (Snake) Snake.stopSnake();
       } else {
         // Pipeline tab or others — stop game and animation
         const Game = (typeof window !== 'undefined' && window.ForemanGame);
@@ -722,6 +744,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (BugSquash) BugSquash.stopAnim();
         const Dashboard = (typeof window !== 'undefined' && window.ForemanDashboard);
         if (Dashboard) Dashboard.stopAutoRefresh();
+        const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
+        if (Snake) Snake.stopSnake();
       }
     });
   });
@@ -733,6 +757,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const Game = (typeof window !== 'undefined' && window.ForemanGame);
       if (Game) Game.startGame();
     });
+  }
+
+  // Snake start button
+  var snakeStartBtn = document.getElementById('snake-start-btn');
+  if (snakeStartBtn) {
+    snakeStartBtn.addEventListener('click', function() {
+      if (window.ForemanSnake) {
+        window.ForemanSnake.startSnake();
+      }
+    });
+  }
+
+  // Snake canvas initialization
+  var snakeCanvas = document.getElementById('snake-canvas');
+  if (snakeCanvas && window.ForemanSnake) {
+    window.ForemanSnake.initSnake(snakeCanvas);
+    snakeInitialized = true;
   }
 
   // Arrow key handling for game
