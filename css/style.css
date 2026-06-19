@@ -605,6 +605,7 @@ body.theme-professional .agent-node {
   border: 1px solid #3E3E42;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   image-rendering: auto;
+  animation: fadeIn 0.4s ease both;
 }
 
 body.theme-professional .agent-node:not(.dragging):hover {
@@ -651,6 +652,31 @@ body.demo-active.theme-professional #agent-detail {
 body.theme-professional .demo-progress::after {
   content: ' |';
   animation: typing-cursor 1s steps(1) infinite;
+}
+
+body.theme-professional .tab-btn {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Inter', sans-serif;
+  border-radius: 6px;
+  border: 1px solid #3E3E42;
+}
+
+body.theme-professional #agent-detail h2 {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Inter', sans-serif;
+}
+
+body.theme-professional .game-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Inter', sans-serif;
+}
+
+body.theme-professional .game-hud {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Inter', sans-serif;
+}
+
+body.theme-professional #game-canvas,
+body.theme-professional #bug-squash-canvas {
+  image-rendering: auto;
+  border: 1px solid #3E3E42;
+  border-radius: 8px;
 }
 
 /* Respect reduced motion */
