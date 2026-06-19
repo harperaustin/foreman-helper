@@ -875,8 +875,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (BugSquash) BugSquash.stopAnim();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
+      } else if (targetTab === 'profile') {
+        if (demoActive) stopDemo();
+        const Game = (typeof window !== 'undefined' && window.ForemanGame);
+        if (Game) Game.stopGame();
+        const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
+        if (BugSquash) BugSquash.stopAnim();
+        const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
+        if (Snake) Snake.stopSnake();
+        const ProfileUI = (typeof window !== 'undefined' && window.ForemanProfileUI);
+        const profileContainer = document.getElementById('profile-container');
+        if (ProfileUI && profileContainer) {
+          window.ForemanProfileUI.renderProfile(profileContainer);
+        }
       } else {
-        // Pipeline tab or others — stop game and animation
         const Game = (typeof window !== 'undefined' && window.ForemanGame);
         if (Game) Game.stopGame();
         const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
