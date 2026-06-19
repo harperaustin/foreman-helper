@@ -567,10 +567,10 @@ body.demo-active .arrowhead-feedback.demo-active-arrow {
 
 /* === Professional Theme === */
 body.theme-professional {
-  --bg: #FAFAFA;
-  --surface: #F3F2F1;
-  --text: #242424;
-  --text-muted: #616161;
+  --bg: #1B1B1F;
+  --surface: #2B2B30;
+  --text: #D6D6DD;
+  --text-muted: #8E8E96;
   --accent: #0078D4;
   --feedback-arrow: #D13438;
   --color-researcher: #0078D4;
@@ -602,13 +602,13 @@ body.theme-professional header h1 {
 
 body.theme-professional .agent-node {
   border-radius: 8px;
-  border: 1px solid #E1DFDD;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  border: 1px solid #3E3E42;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   image-rendering: auto;
 }
 
 body.theme-professional .agent-node:not(.dragging):hover {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
 }
 
 body.theme-professional .agent-node .stage-badge {
@@ -623,7 +623,7 @@ body.theme-professional .theme-btn,
 body.theme-professional .demo-btn {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Inter', sans-serif;
   border-radius: 6px;
-  border: 1px solid #E1DFDD;
+  border: 1px solid #3E3E42;
 }
 
 body.theme-professional .demo-progress {
