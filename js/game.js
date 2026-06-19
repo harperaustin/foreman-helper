@@ -12,6 +12,13 @@ let ctx = null;
 let animFrameId = null;
 let spawnIntervalId = null;
 
+function getFont(size) {
+  var isProfessional = document.body.classList.contains('theme-professional');
+  return isProfessional
+    ? size + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Inter", sans-serif'
+    : size + 'px "Press Start 2P", cursive';
+}
+
 let state = {
   player: { x: 0, y: 0, width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
   bugs: [],
@@ -168,16 +175,16 @@ function render() {
 
   // Score text on canvas
   ctx.fillStyle = '#f5c518';
-  ctx.font = '12px "Press Start 2P", cursive';
+  ctx.font = getFont(12);
   ctx.textAlign = 'left';
   ctx.fillText('Score: ' + state.score, 10, 20);
 
   if (state.gameOver) {
     ctx.fillStyle = '#ff4444';
-    ctx.font = '16px "Press Start 2P", cursive';
+    ctx.font = getFont(16);
     ctx.textAlign = 'center';
     ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
-    ctx.font = '10px "Press Start 2P", cursive';
+    ctx.font = getFont(10);
     ctx.fillText('Press Start to retry', canvas.width / 2, canvas.height / 2 + 30);
   }
 }

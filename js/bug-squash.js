@@ -17,6 +17,13 @@ let bug = { x: 0, y: 0, vx: 0, vy: 0, alive: true };
 let frameCount = 0;
 let squashFrame = 0;
 
+function getFont(size) {
+  var isProfessional = document.body.classList.contains('theme-professional');
+  return isProfessional
+    ? size + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Inter", sans-serif'
+    : size + 'px "Press Start 2P", cursive';
+}
+
 function resetPositions() {
   foreman.x = 60;
   foreman.y = CANVAS_H - 80;
@@ -171,10 +178,10 @@ function render() {
   // Celebrate phase: stars
   if (phase === 'celebrate') {
     ctx.fillStyle = '#f5c518';
-    ctx.font = '16px "Press Start 2P", cursive';
+    ctx.font = getFont(16);
     ctx.textAlign = 'center';
     ctx.fillText('✓', fx, fy - 36);
-    ctx.font = '10px "Press Start 2P", cursive';
+    ctx.font = getFont(10);
     ctx.fillText('★', fx - 20, fy - 30);
     ctx.fillText('★', fx + 20, fy - 30);
   }
@@ -243,7 +250,7 @@ function render() {
   // Text overlay during celebrate
   if (phase === 'celebrate') {
     ctx.fillStyle = '#f5c518';
-    ctx.font = '20px "Press Start 2P", cursive';
+    ctx.font = getFont(20);
     ctx.textAlign = 'center';
     ctx.fillText('SQUASHED!', CANVAS_W / 2, 40);
   }

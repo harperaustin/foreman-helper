@@ -787,3 +787,60 @@ describe('bug-squash tab DOM presence', () => {
    expect(canvas).not.toBeNull();
   });
 });
+
+describe('professional theme CSS overrides', () => {
+  test('professional theme CSS overrides retro fonts for tab-btn, game-title, game-hud, agent-detail h2', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', 'css', 'style.css'), 'utf8');
+    const proStart = css.indexOf('body.theme-professional .tab-btn');
+    expect(proStart).toBeGreaterThan(-1);
+    expect(css).toContain('body.theme-professional .game-title');
+    expect(css).toContain('body.theme-professional .game-hud');
+    expect(css).toContain('body.theme-professional #agent-detail h2');
+    expect(css).toContain('body.theme-professional #game-canvas');
+    expect(css).toContain('body.theme-professional #bug-squash-canvas');
+    const tabBtnIdx = css.indexOf('body.theme-professional .tab-btn');
+    const nextBlock = css.indexOf('}', tabBtnIdx);
+    const tabBtnBlock = css.substring(tabBtnIdx, nextBlock);
+    expect(tabBtnBlock).toContain('Inter');
+    expect(tabBtnBlock).toContain('sans-serif');
+  });
+
+  test('professional theme CSS overrides agent-node animation to smooth easing', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', 'css', 'style.css'), 'utf8');
+    const proNodeStart = css.indexOf('body.theme-professional .agent-node');
+    const proNodeEnd = css.indexOf('}', proNodeStart);
+    const proNodeBlock = css.substring(proNodeStart, proNodeEnd);
+    expect(proNodeBlock).toContain('ease');
+    expect(proNodeBlock).not.toContain('steps(');
+  });
+
+  test('professional theme CSS sets image-rendering auto on game canvases', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', 'css', 'style.css'), 'utf8');
+    const canvasIdx = css.indexOf('body.theme-professional #game-canvas');
+    expect(canvasIdx).toBeGreaterThan(-1);
+    const canvasEnd = css.indexOf('}', canvasIdx);
+    const canvasBlock = css.substring(canvasIdx, canvasEnd);
+    expect(canvasBlock).toContain('image-rendering: auto');
+    expect(canvasBlock).toContain('border-radius: 8px');
+  });
+});
+
+describe('game.js getFont theme detection', () => {
+  test('getFont returns sans-serif font when professional theme is active', () => {
+    document.body.classList.add('theme-professional');
+    const gameJs = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'game.js'), 'utf8');
+    expect(gameJs).toContain('theme-professional');
+    expect(gameJs).toContain('getFont');
+    expect(gameJs).not.toContain("ctx.font = '12px \"Press Start 2P\"");
+    document.body.classList.remove('theme-professional');
+  });
+});
+
+describe('bug-squash.js getFont theme detection', () => {
+  test('getFont returns sans-serif font when professional theme is active', () => {
+    const bugSquashJs = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'bug-squash.js'), 'utf8');
+    expect(bugSquashJs).toContain('theme-professional');
+    expect(bugSquashJs).toContain('getFont');
+    expect(bugSquashJs).not.toContain("ctx.font = '16px \"Press Start 2P\"");
+  });
+});
