@@ -165,11 +165,25 @@ function getUserByUsername(username) {
   return null;
 }
 
-function createUser(username, password) {
+var VALID_AVATARS = ['classic', 'colorful', 'light'];
+
+function isValidAvatar(avatar) {
+  for (var i = 0; i < VALID_AVATARS.length; i++) {
+    if (VALID_AVATARS[i] === avatar) return true;
+  }
+  return false;
+}
+
+function createUser(username, password, avatar) {
   var usernameError = validateUsername(username);
   if (usernameError) throw new Error(usernameError);
   var passwordError = validatePassword(password);
   if (passwordError) throw new Error(passwordError);
+
+  if (typeof avatar === 'undefined') avatar = 'classic';
+  if (!isValidAvatar(avatar)) {
+    throw new Error('Invalid avatar selection.');
+  }
 
   if (getUserByUsername(username)) {
     throw new Error('Username already taken.');
@@ -183,6 +197,7 @@ function createUser(username, password) {
     username: username,
     salt: salt,
     passwordHash: sha256(password + salt),
+    avatar: avatar,
     createdAt: now,
     updatedAt: now
   };
@@ -220,6 +235,13 @@ function updateUser(id, updates) {
     if (passwordError) throw new Error(passwordError);
     user.salt = generateSalt();
     user.passwordHash = sha256(updates.password + user.salt);
+  }
+
+  if (typeof updates.avatar !== 'undefined') {
+    if (!isValidAvatar(updates.avatar)) {
+      throw new Error('Invalid avatar selection.');
+    }
+    user.avatar = updates.avatar;
   }
 
   user.updatedAt = new Date().toISOString();

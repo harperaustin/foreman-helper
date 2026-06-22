@@ -46,7 +46,7 @@ function readSession() {
   }
 }
 
-function register(username, password) {
+function register(username, password, avatar) {
   return delay(function() {
     var db = getDB();
     var u = sanitize(username);
@@ -54,7 +54,8 @@ function register(username, password) {
     if (!u || !p) {
       throw new Error('Username and password are required.');
     }
-    var user = db.createUser(u, p);
+    var a = sanitize(avatar);
+    var user = db.createUser(u, p, a || undefined);
     setSession(user);
     return user;
   });
@@ -91,7 +92,7 @@ function getCurrentUser() {
   });
 }
 
-function updateProfile(currentPassword, newUsername, newPassword) {
+function updateProfile(currentPassword, newUsername, newPassword, newAvatar) {
   return delay(function() {
     var db = getDB();
     var session = readSession();
@@ -112,12 +113,16 @@ function updateProfile(currentPassword, newUsername, newPassword) {
     var updates = {};
     var nextUsername = sanitize(newUsername);
     var nextPassword = sanitize(newPassword);
+    var nextAvatar = sanitize(newAvatar);
 
     if (nextUsername && nextUsername !== session.username) {
       updates.username = nextUsername;
     }
     if (nextPassword) {
       updates.password = nextPassword;
+    }
+    if (nextAvatar && nextAvatar !== session.avatar) {
+      updates.avatar = nextAvatar;
     }
 
     if (Object.keys(updates).length === 0) {

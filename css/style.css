@@ -1206,3 +1206,78 @@ body.theme-professional .success-banner {
   font-weight: bold;
   margin-right: 0.5rem;
 }
+
+/* --- Avatar customization --- */
+.profile-avatar {
+  display: block;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 1rem;
+  image-rendering: pixelated;
+  border: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 4px;
+}
+
+body.theme-professional .profile-avatar {
+  border-radius: 50%;
+}
+
+.avatar-selector-container {
+  margin: 0.75rem 0;
+}
+
+.avatar-selector-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.avatar-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.avatar-option-item {
+  display: block;
+  cursor: pointer;
+  text-align: center;
+}
+
+.avatar-radio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.avatar-option-img {
+  display: block;
+  width: 100%;
+  max-width: 72px;
+  height: auto;
+  margin: 0 auto;
+  image-rendering: pixelated;
+  border: 3px solid transparent;
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 4px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.avatar-radio:checked + .avatar-option-img {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.avatar-option-name {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
