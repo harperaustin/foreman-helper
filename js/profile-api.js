@@ -143,6 +143,15 @@ function logout() {
   });
 }
 
+function listUsers() {
+  return delay(function() {
+    var db = getDB();
+    var users = db.listUsers();
+    if (!Array.isArray(users)) return [];
+    return users;
+  });
+}
+
 var ForemanProfileAPI = {
   SESSION_KEY: SESSION_KEY,
   NETWORK_DELAY: NETWORK_DELAY,
@@ -150,7 +159,8 @@ var ForemanProfileAPI = {
   login: login,
   getCurrentUser: getCurrentUser,
   updateProfile: updateProfile,
-  logout: logout
+  logout: logout,
+  listUsers: listUsers
 };
 
 if (typeof window !== 'undefined') {

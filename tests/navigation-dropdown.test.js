@@ -16,11 +16,11 @@ describe('navigation dropdown — DOM structure', () => {
     document.body.innerHTML = indexHtml;
   });
 
-  test('main .tab-nav contains exactly pipeline, harness, profile buttons', () => {
+  test('main .tab-nav contains exactly pipeline, harness, profile, users buttons', () => {
     const nav = document.querySelector('nav.tab-nav');
     expect(nav).not.toBeNull();
     const ids = Array.from(nav.querySelectorAll(':scope > .tab-btn')).map((b) => b.id);
-    expect(ids).toEqual(['tab-pipeline', 'tab-harness', 'tab-profile']);
+    expect(ids).toEqual(['tab-pipeline', 'tab-harness', 'tab-profile', 'tab-users']);
   });
 
   test('games menu toggle and list exist', () => {
@@ -178,7 +178,7 @@ function loadAppWithFullDom() {
   window.BugSquashAnim = { initAnim: jest.fn(), startAnim: jest.fn(), stopAnim: jest.fn() };
   window.ForemanSnake = { initSnake: jest.fn(), stopSnake: jest.fn() };
   window.ForemanHarness = { renderHarness: jest.fn() };
-  window.ForemanProfileUI = { renderProfile: jest.fn() };
+  window.ForemanProfileUI = { renderProfile: jest.fn(), renderUsers: jest.fn() };
 
   // Track document-level listeners added during this load so they can be
   // cleaned up afterwards — the shared jsdom `document` persists across tests

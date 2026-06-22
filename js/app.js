@@ -927,6 +927,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ProfileUI && profileContainer) {
           window.ForemanProfileUI.renderProfile(profileContainer);
         }
+      } else if (targetTab === 'users') {
+        if (demoActive) stopDemo();
+        const Game = (typeof window !== 'undefined' && window.ForemanGame);
+        if (Game) Game.stopGame();
+        const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
+        if (BugSquash) BugSquash.stopAnim();
+        const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
+        if (Snake) Snake.stopSnake();
+        const ProfileUI = (typeof window !== 'undefined' && window.ForemanProfileUI);
+        const usersContainer = document.getElementById('users-container');
+        if (ProfileUI && usersContainer && typeof ProfileUI.renderUsers === 'function') {
+          ProfileUI.renderUsers(usersContainer);
+        }
       } else {
         const Game = (typeof window !== 'undefined' && window.ForemanGame);
         if (Game) Game.stopGame();
