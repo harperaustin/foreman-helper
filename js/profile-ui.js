@@ -23,7 +23,10 @@ function el(tag, className, text) {
 var AVATAR_OPTIONS = [
   { id: 'classic', name: 'Classic', src: 'assets/foreman-mascot.svg' },
   { id: 'colorful', name: 'Cyberpunk', src: 'assets/foreman-mascot-colorful.svg' },
-  { id: 'light', name: 'Construction Light', src: 'assets/foreman-mascot-light.svg' }
+  { id: 'light', name: 'Construction Light', src: 'assets/foreman-mascot-light.svg' },
+  { id: 'forest', name: 'Forest Ranger', src: 'assets/foreman-mascot-forest.svg' },
+  { id: 'crimson', name: 'Fire Chief', src: 'assets/foreman-mascot-crimson.svg' },
+  { id: 'midnight', name: 'Midnight', src: 'assets/foreman-mascot-midnight.svg' }
 ];
 
 function avatarSrc(id) {
