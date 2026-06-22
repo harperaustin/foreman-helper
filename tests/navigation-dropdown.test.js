@@ -80,6 +80,17 @@ describe('navigation dropdown — DOM structure', () => {
     const toggle = document.getElementById('games-menu-toggle');
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
   });
+
+  test('dropdown toggle button text is "Extras ▾" and has no game emoji', () => {
+    const toggle = document.getElementById('games-menu-toggle');
+    expect(toggle.textContent.trim()).toBe('Extras ▾');
+    expect(toggle.textContent).not.toContain('🎮');
+  });
+
+  test('dropdown toggle button aria-label is updated to "Open extras menu"', () => {
+    const toggle = document.getElementById('games-menu-toggle');
+    expect(toggle.getAttribute('aria-label')).toBe('Open extras menu');
+  });
 });
 
 // ---------------------------------------------------------------------------
