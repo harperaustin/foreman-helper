@@ -122,12 +122,14 @@ function renderProfile(container) {
     username.name = 'username';
     username.placeholder = 'Username';
     username.setAttribute('aria-label', 'Username');
+    username.setAttribute('autocomplete', 'off');
 
     var password = el('input', 'profile-input');
     password.type = 'password';
     password.name = 'password';
     password.placeholder = 'Password';
     password.setAttribute('aria-label', 'Password');
+    password.setAttribute('autocomplete', 'new-password');
 
     var submit = el('button', 'profile-btn', 'Sign In');
     submit.type = 'submit';
@@ -171,18 +173,21 @@ function renderProfile(container) {
     username.name = 'username';
     username.placeholder = 'Username (3-15 chars)';
     username.setAttribute('aria-label', 'Username');
+    username.setAttribute('autocomplete', 'off');
 
     var password = el('input', 'profile-input');
     password.type = 'password';
     password.name = 'password';
     password.placeholder = 'Password';
     password.setAttribute('aria-label', 'Password');
+    password.setAttribute('autocomplete', 'new-password');
 
     var confirm = el('input', 'profile-input');
     confirm.type = 'password';
     confirm.name = 'confirm';
     confirm.placeholder = 'Confirm Password';
     confirm.setAttribute('aria-label', 'Confirm Password');
+    confirm.setAttribute('autocomplete', 'new-password');
 
     var submit = el('button', 'profile-btn', 'Register');
     submit.type = 'submit';
@@ -274,18 +279,21 @@ function renderProfile(container) {
     username.placeholder = 'New username (optional)';
     username.value = user.username;
     username.setAttribute('aria-label', 'New username');
+    username.setAttribute('autocomplete', 'off');
 
     var password = el('input', 'profile-input');
     password.type = 'password';
     password.name = 'password';
     password.placeholder = 'New password (optional)';
     password.setAttribute('aria-label', 'New password');
+    password.setAttribute('autocomplete', 'new-password');
 
     var current = el('input', 'profile-input');
     current.type = 'password';
     current.name = 'current';
     current.placeholder = 'Current password (required to change username/password)';
     current.setAttribute('aria-label', 'Current password');
+    current.setAttribute('autocomplete', 'new-password');
 
     var submit = el('button', 'profile-btn', 'Save Changes');
     submit.type = 'submit';
@@ -346,8 +354,58 @@ function renderProfile(container) {
   renderView();
 }
 
+function renderUsers(container) {
+  if (!container) return;
+  var api = getAPI();
+  container.innerHTML = '';
+
+  var wrapper = el('div', 'users-list');
+  wrapper.appendChild(el('h2', 'users-list-title', 'All Users'));
+
+  var grid = el('div', 'users-grid');
+  wrapper.appendChild(grid);
+  container.appendChild(wrapper);
+
+  function renderEmpty() {
+    grid.innerHTML = '';
+    grid.appendChild(el('p', 'users-empty', 'No users have registered yet.'));
+  }
+
+  if (!api || typeof api.listUsers !== 'function') {
+    renderEmpty();
+    return;
+  }
+
+  api.listUsers().then(function(users) {
+    grid.innerHTML = '';
+    if (!users || users.length === 0) {
+      renderEmpty();
+      return;
+    }
+    for (var i = 0; i < users.length; i++) {
+      var user = users[i];
+      var card = el('div', 'user-card');
+
+      var img = el('img', 'user-card-avatar');
+      img.src = avatarSrc(user.avatar);
+      img.alt = 'User avatar';
+      card.appendChild(img);
+
+      // username rendered via text node — never innerHTML (XSS-safe)
+      var nameEl = el('span', 'user-card-name');
+      nameEl.appendChild(document.createTextNode(user.username == null ? '' : String(user.username)));
+      card.appendChild(nameEl);
+
+      grid.appendChild(card);
+    }
+  }).catch(function() {
+    renderEmpty();
+  });
+}
+
 var ForemanProfileUI = {
-  renderProfile: renderProfile
+  renderProfile: renderProfile,
+  renderUsers: renderUsers
 };
 
 if (typeof window !== 'undefined') {

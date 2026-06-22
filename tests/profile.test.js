@@ -381,6 +381,217 @@ describe('integration: profile tab halts running games', () => {
   });
 });
 
+describe('ForemanProfileDB — listUsers', () => {
+  test('returns empty array when no users exist', () => {
+    DB.clearAllUsers();
+    expect(DB.listUsers()).toEqual([]);
+  });
+
+  test('returns all users with whitelisted fields', () => {
+    DB.createUser('alice', 'abc123');
+    DB.createUser('bob', 'abc123');
+    const users = DB.listUsers();
+    expect(users).toHaveLength(2);
+    users.forEach((u) => {
+      expect(u).toHaveProperty('id');
+      expect(u).toHaveProperty('username');
+      expect(u).toHaveProperty('avatar');
+      expect(u).toHaveProperty('createdAt');
+      expect(u).toHaveProperty('updatedAt');
+    });
+    const names = users.map((u) => u.username);
+    expect(names).toContain('alice');
+    expect(names).toContain('bob');
+  });
+
+  test('never exposes passwordHash or salt', () => {
+    DB.createUser('alice', 'abc123');
+    const users = DB.listUsers();
+    users.forEach((u) => {
+      expect(u).not.toHaveProperty('passwordHash');
+      expect(u).not.toHaveProperty('salt');
+    });
+  });
+
+  test('returns copies — mutating result does not affect stored data', () => {
+    DB.createUser('alice', 'abc123');
+    const users = DB.listUsers();
+    users[0].username = 'mutated';
+    const again = DB.listUsers();
+    expect(again[0].username).toBe('alice');
+  });
+});
+
+describe('ForemanProfileAPI — listUsers', () => {
+  test('resolves to an array', async () => {
+    const result = await API.listUsers();
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  test('empty store resolves to []', async () => {
+    DB.clearAllUsers();
+    expect(await API.listUsers()).toEqual([]);
+  });
+
+  test('with users present, length matches and no credentials leak', async () => {
+    await API.register('alice', 'abc123');
+    await API.register('bob', 'abc123');
+    const users = await API.listUsers();
+    expect(users).toHaveLength(2);
+    users.forEach((u) => {
+      expect(u).not.toHaveProperty('passwordHash');
+      expect(u).not.toHaveProperty('salt');
+    });
+  });
+});
+
+describe('ForemanProfileUI — renderUsers', () => {
+  let container;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    container.remove();
+  });
+
+  const flush = () => new Promise((r) => setTimeout(r, API.NETWORK_DELAY + 20));
+
+  test('null container does not throw', () => {
+    expect(() => UI.renderUsers(null)).not.toThrow();
+  });
+
+  test('empty state shows a message when no users', async () => {
+    DB.clearAllUsers();
+    UI.renderUsers(container);
+    await flush();
+    const empty = container.querySelector('.users-empty');
+    expect(empty).not.toBeNull();
+    expect(empty.textContent).toMatch(/no users/i);
+  });
+
+  test('populated state renders a card per user with avatar and name', async () => {
+    await API.register('alice', 'abc123');
+    await API.register('bob', 'abc123');
+    UI.renderUsers(container);
+    await flush();
+    const cards = container.querySelectorAll('.user-card');
+    expect(cards.length).toBe(2);
+    const avatar = container.querySelector('img.user-card-avatar');
+    expect(avatar).not.toBeNull();
+    expect(avatar.getAttribute('src')).toBeTruthy();
+    const names = Array.from(container.querySelectorAll('.user-card-name')).map((n) => n.textContent);
+    expect(names).toContain('alice');
+  });
+
+  test('usernames render safely via text nodes (no XSS)', () => {
+    // Mirror the existing XSS guard: text content with markup is escaped.
+    const span = document.createElement('span');
+    span.className = 'user-card-name';
+    span.appendChild(document.createTextNode('<img src=x onerror=alert(1)>'));
+    expect(span.innerHTML).not.toContain('<img');
+    expect(span.querySelector('img')).toBeNull();
+  });
+});
+
+describe('ForemanProfileUI — register autocomplete attributes', () => {
+  let container;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    container.remove();
+  });
+
+  const flush = () => new Promise((r) => setTimeout(r, API.NETWORK_DELAY + 20));
+
+  test('register inputs disable native autofill', async () => {
+    UI.renderProfile(container);
+    await flush();
+    container.querySelector('.profile-link').click();
+    expect(container.querySelector('input[name="username"]').getAttribute('autocomplete')).toBe('off');
+    expect(container.querySelector('input[name="password"]').getAttribute('autocomplete')).toBe('new-password');
+    expect(container.querySelector('input[name="confirm"]').getAttribute('autocomplete')).toBe('new-password');
+  });
+});
+
+describe('index.html structure — users tab', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  test('contains users tab and panel markup', () => {
+    expect(html).toContain('id="tab-users"');
+    expect(html).toContain('data-tab="users"');
+    expect(html).toContain('🧑‍🤝‍🧑 Users');
+    expect(html).toContain('id="panel-users"');
+    expect(html).toContain('id="users-container"');
+    // script order preserved
+    expect(html.indexOf('js/profile-db.js')).toBeLessThan(html.indexOf('js/profile-api.js'));
+    expect(html.indexOf('js/profile-api.js')).toBeLessThan(html.indexOf('js/profile-ui.js'));
+    expect(html.indexOf('js/profile-ui.js')).toBeLessThan(html.indexOf('js/app.js'));
+  });
+});
+
+describe('css/style.css — users grid rules', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'style.css'), 'utf8');
+
+  test('users selectors exist', () => {
+    ['.users-grid', '.user-card', '.user-card-avatar', '.user-card-name', '.users-empty'].forEach((sel) => {
+      expect(css).toContain(sel);
+    });
+  });
+});
+
+describe('integration: users tab halts running games', () => {
+  test('switching to users stops game, bug squash, snake and renders users', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const bodyMatch = html.match(/<nav class="tab-nav"[\s\S]*?<\/main>/);
+    document.body.innerHTML = bodyMatch[0];
+
+    const stopGame = jest.fn();
+    const stopAnim = jest.fn();
+    const stopSnake = jest.fn();
+    const renderUsers = jest.fn();
+
+    window.ForemanGame = { stopGame };
+    window.BugSquashAnim = { stopAnim };
+    window.ForemanSnake = { stopSnake };
+    window.ForemanProfileUI = { renderUsers };
+
+    const btn = document.getElementById('tab-users');
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-panel').forEach((p) => {
+        p.classList.toggle('active', p.id === 'panel-users');
+      });
+      window.ForemanGame.stopGame();
+      window.BugSquashAnim.stopAnim();
+      window.ForemanSnake.stopSnake();
+      window.ForemanProfileUI.renderUsers(document.getElementById('users-container'));
+    });
+    btn.click();
+
+    expect(document.getElementById('panel-users').classList.contains('active')).toBe(true);
+    expect(stopGame).toHaveBeenCalled();
+    expect(stopAnim).toHaveBeenCalled();
+    expect(stopSnake).toHaveBeenCalled();
+    expect(renderUsers).toHaveBeenCalled();
+  });
+
+  test('app.js wires renderUsers and game halts for the users tab', () => {
+    const appSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8');
+    expect(appSrc).toContain("targetTab === 'users'");
+    expect(appSrc).toContain('ProfileUI.renderUsers');
+    const usersBranch = appSrc.slice(appSrc.indexOf("targetTab === 'users'"));
+    expect(usersBranch).toContain('Game.stopGame()');
+    expect(usersBranch).toContain('BugSquash.stopAnim()');
+    expect(usersBranch).toContain('Snake.stopSnake()');
+  });
+});
+
 describe('Avatar Customization', () => {
   describe('database level', () => {
     test('createUser defaults avatar to classic', () => {

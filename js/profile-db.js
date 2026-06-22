@@ -165,6 +165,23 @@ function getUserByUsername(username) {
   return null;
 }
 
+function listUsers() {
+  var users = loadUsers();
+  var result = [];
+  for (var i = 0; i < users.length; i++) {
+    var u = users[i];
+    if (!u || typeof u !== 'object') continue;
+    result.push({
+      id: u.id,
+      username: u.username,
+      avatar: u.avatar,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt
+    });
+  }
+  return result;
+}
+
 var VALID_AVATARS = ['classic', 'colorful', 'light', 'forest', 'crimson', 'midnight'];
 
 function isValidAvatar(avatar) {
@@ -272,6 +289,7 @@ var ForemanProfileDB = {
   createUser: createUser,
   getUser: getUser,
   getUserByUsername: getUserByUsername,
+  listUsers: listUsers,
   updateUser: updateUser,
   verifyCredentials: verifyCredentials,
   clearAllUsers: clearAllUsers
