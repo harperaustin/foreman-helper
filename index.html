@@ -73,13 +73,28 @@
       <button class="theme-btn" data-theme="professional" aria-pressed="false" title="Professional mode">💼</button>
     </div>
     <button class="demo-btn" id="demo-toggle" aria-pressed="false" aria-label="Run pipeline demo animation">▶ Demo</button>
+    <div class="games-menu" id="games-menu">
+      <button
+        class="games-menu-toggle"
+        id="games-menu-toggle"
+        type="button"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-controls="games-menu-list"
+        aria-label="Open games menu"
+      >
+        🎮 Games ▾
+      </button>
+      <div class="games-menu-list" id="games-menu-list" hidden>
+        <button class="tab-btn" data-tab="game" role="tab" aria-selected="false" id="tab-game" aria-controls="panel-game">🎮 Game</button>
+        <button class="tab-btn" data-tab="bug-squash" role="tab" aria-selected="false" id="tab-bug-squash" aria-controls="panel-bug-squash">🐛 Bug Squash</button>
+        <button class="tab-btn" data-tab="snake" role="tab" aria-selected="false" id="tab-snake" aria-controls="panel-snake">🐍 Snake</button>
+      </div>
+    </div>
   </header>
   <div class="caution-stripe"></div>
   <nav class="tab-nav" role="tablist">
     <button class="tab-btn active" data-tab="pipeline" role="tab" aria-selected="true" id="tab-pipeline" aria-controls="panel-pipeline">🏗️ Pipeline</button>
-    <button class="tab-btn" data-tab="game" role="tab" aria-selected="false" id="tab-game" aria-controls="panel-game">🎮 Game</button>
-    <button class="tab-btn" data-tab="bug-squash" role="tab" aria-selected="false" id="tab-bug-squash" aria-controls="panel-bug-squash">🐛 Bug Squash</button>
-    <button class="tab-btn" data-tab="snake" role="tab" aria-selected="false" id="tab-snake" aria-controls="panel-snake">🐍 Snake</button>
     <button class="tab-btn" data-tab="harness" role="tab" aria-selected="false" id="tab-harness" aria-controls="panel-harness">🚧 Harness</button>
     <button class="tab-btn" data-tab="profile" role="tab" aria-selected="false" id="tab-profile" aria-controls="panel-profile">👤 Profile</button>
   </nav>

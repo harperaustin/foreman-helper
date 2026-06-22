@@ -42,8 +42,8 @@ function setTheme(themeName) {
   // Persist preference
   try { localStorage.setItem('foreman-theme', themeName); } catch (e) { /* ignore */ }
 
-  // Update button states
-  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+  // Update button states (only real theme controls with a data-theme value)
+  document.querySelectorAll('.theme-btn[data-theme]').forEach(function(btn) {
     var isActive = btn.getAttribute('data-theme') === themeName;
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
@@ -770,8 +770,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   setTheme(savedTheme);
 
-  // Attach theme button listeners
-  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+  // Attach theme button listeners (only real theme controls with a data-theme value)
+  document.querySelectorAll('.theme-btn[data-theme]').forEach(function(btn) {
     btn.addEventListener('click', function() {
       setTheme(btn.getAttribute('data-theme'));
     });
@@ -800,6 +800,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Games dropdown menu
+  const gamesMenu = document.getElementById('games-menu');
+  const gamesMenuToggle = document.getElementById('games-menu-toggle');
+  const gamesMenuList = document.getElementById('games-menu-list');
+
+  function setGamesMenuOpen(isOpen) {
+    if (!gamesMenu || !gamesMenuToggle || !gamesMenuList) return;
+    gamesMenu.classList.toggle('open', isOpen);
+    gamesMenuList.hidden = !isOpen;
+    gamesMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+
+  if (gamesMenu && gamesMenuToggle && gamesMenuList) {
+    gamesMenuToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = gamesMenu.classList.contains('open');
+      setGamesMenuOpen(!isOpen);
+    });
+
+    // Close the games menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (gamesMenu.classList.contains('open') && !gamesMenu.contains(e.target)) {
+        setGamesMenuOpen(false);
+      }
+    });
+
+    // Close the games menu on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && gamesMenu.classList.contains('open')) {
+        setGamesMenuOpen(false);
+      }
+    });
+  }
+
   // Tab navigation
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
@@ -818,6 +852,11 @@ document.addEventListener('DOMContentLoaded', () => {
       tabPanels.forEach(p => {
         p.classList.toggle('active', p.id === 'panel-' + targetTab);
       });
+
+      // Close the games dropdown when one of its items is selected
+      if (gamesMenuList && gamesMenuList.contains(btn)) {
+        setGamesMenuOpen(false);
+      }
 
       if (targetTab === 'game') {
         if (demoActive) stopDemo();
