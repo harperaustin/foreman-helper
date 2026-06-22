@@ -100,16 +100,6 @@ function updateProfile(currentPassword, newUsername, newPassword, newAvatar) {
       throw new Error('You must be logged in to update your profile.');
     }
 
-    var current = sanitize(currentPassword);
-    if (!current) {
-      throw new Error('Current password is required.');
-    }
-
-    var verified = db.verifyCredentials(session.username, current);
-    if (!verified) {
-      throw new Error('Current password is incorrect.');
-    }
-
     var updates = {};
     var nextUsername = sanitize(newUsername);
     var nextPassword = sanitize(newPassword);
@@ -127,6 +117,17 @@ function updateProfile(currentPassword, newUsername, newPassword, newAvatar) {
 
     if (Object.keys(updates).length === 0) {
       throw new Error('No changes to apply.');
+    }
+
+    var requiresPassword = updates.hasOwnProperty('username') || updates.hasOwnProperty('password');
+    if (requiresPassword) {
+      var current = sanitize(currentPassword);
+      if (!current) {
+        throw new Error('Current password is required.');
+      }
+      if (!db.verifyCredentials(session.username, current)) {
+        throw new Error('Current password is incorrect.');
+      }
     }
 
     var user = db.updateUser(session.id, updates);

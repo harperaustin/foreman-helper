@@ -281,7 +281,7 @@ function renderProfile(container) {
     var current = el('input', 'profile-input');
     current.type = 'password';
     current.name = 'current';
-    current.placeholder = 'Current password (required)';
+    current.placeholder = 'Current password (required to change username/password)';
     current.setAttribute('aria-label', 'Current password');
 
     var submit = el('button', 'profile-btn', 'Save Changes');
@@ -307,7 +307,9 @@ function renderProfile(container) {
       var u = username.value.trim();
       var p = password.value.trim();
       var cur = current.value.trim();
-      if (!cur) {
+      var usernameChanged = u && u !== user.username;
+      var passwordChanged = !!p;
+      if ((usernameChanged || passwordChanged) && !cur) {
         showBanner(form, 'error', 'Current password is required.');
         return;
       }
