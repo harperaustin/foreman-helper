@@ -20,6 +20,54 @@ function el(tag, className, text) {
   return node;
 }
 
+var AVATAR_OPTIONS = [
+  { id: 'classic', name: 'Classic', src: 'assets/foreman-mascot.svg' },
+  { id: 'colorful', name: 'Cyberpunk', src: 'assets/foreman-mascot-colorful.svg' },
+  { id: 'light', name: 'Construction Light', src: 'assets/foreman-mascot-light.svg' }
+];
+
+function avatarSrc(id) {
+  for (var i = 0; i < AVATAR_OPTIONS.length; i++) {
+    if (AVATAR_OPTIONS[i].id === id) return AVATAR_OPTIONS[i].src;
+  }
+  return AVATAR_OPTIONS[0].src;
+}
+
+function createAvatarSelector(selectedId) {
+  if (!selectedId) selectedId = 'classic';
+  var container = el('div', 'avatar-selector-container');
+  container.appendChild(el('span', 'avatar-selector-label', 'Choose your mascot'));
+
+  var grid = el('div', 'avatar-options-grid');
+  for (var i = 0; i < AVATAR_OPTIONS.length; i++) {
+    var option = AVATAR_OPTIONS[i];
+    var label = el('label', 'avatar-option-item');
+
+    var radio = el('input', 'avatar-radio');
+    radio.type = 'radio';
+    radio.name = 'avatar';
+    radio.value = option.id;
+    if (option.id === selectedId) radio.checked = true;
+    radio.setAttribute('aria-label', option.name);
+
+    var img = el('img', 'avatar-option-img');
+    img.src = option.src;
+    img.alt = option.name + ' mascot';
+
+    label.appendChild(radio);
+    label.appendChild(img);
+    label.appendChild(el('span', 'avatar-option-name', option.name));
+    grid.appendChild(label);
+  }
+  container.appendChild(grid);
+  return container;
+}
+
+function selectedAvatarValue(form) {
+  var checked = form.querySelector('.avatar-radio:checked');
+  return checked ? checked.value : 'classic';
+}
+
 function showBanner(form, type, message) {
   var existing = form.querySelector('.error-banner, .success-banner');
   if (existing) existing.parentNode.removeChild(existing);
@@ -140,9 +188,12 @@ function renderProfile(container) {
     backLink.type = 'button';
     backLink.addEventListener('click', renderLogin);
 
+    var avatarSelector = createAvatarSelector('classic');
+
     form.appendChild(username);
     form.appendChild(password);
     form.appendChild(confirm);
+    form.appendChild(avatarSelector);
     form.appendChild(submit);
     form.appendChild(backLink);
 
@@ -159,8 +210,9 @@ function renderProfile(container) {
         showBanner(form, 'error', 'Passwords do not match.');
         return;
       }
+      var avatar = selectedAvatarValue(form);
       setLoading(form, true);
-      api.register(u, p).then(function() {
+      api.register(u, p, avatar).then(function() {
         renderView();
       }).catch(function(err) {
         setLoading(form, false);
@@ -175,6 +227,11 @@ function renderProfile(container) {
     clear();
     var card = el('div', 'profile-card');
     card.appendChild(el('h2', 'profile-card-title', 'Profile'));
+
+    var avatar = el('img', 'profile-avatar');
+    avatar.src = avatarSrc(user.avatar);
+    avatar.alt = 'Profile avatar';
+    card.appendChild(avatar);
 
     var nameRow = el('p', 'profile-username');
     nameRow.appendChild(el('span', 'profile-label', 'Username: '));
@@ -236,9 +293,12 @@ function renderProfile(container) {
       renderProfileCard(user);
     });
 
+    var avatarSelector = createAvatarSelector(user.avatar || 'classic');
+
     form.appendChild(username);
     form.appendChild(password);
     form.appendChild(current);
+    form.appendChild(avatarSelector);
     form.appendChild(submit);
     form.appendChild(cancelLink);
 
@@ -251,8 +311,9 @@ function renderProfile(container) {
         showBanner(form, 'error', 'Current password is required.');
         return;
       }
+      var avatar = selectedAvatarValue(form);
       setLoading(form, true);
-      api.updateProfile(cur, u, p).then(function(updated) {
+      api.updateProfile(cur, u, p, avatar).then(function(updated) {
         showBanner(form, 'success', 'Profile updated.');
         setLoading(form, false);
         renderProfileCard(updated);

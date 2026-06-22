@@ -380,3 +380,120 @@ describe('integration: profile tab halts running games', () => {
     expect(profileBranch).toContain('Snake.stopSnake()');
   });
 });
+
+describe('Avatar Customization', () => {
+  describe('database level', () => {
+    test('createUser defaults avatar to classic', () => {
+      const user = DB.createUser('user1', 'abc123');
+      expect(user.avatar).toBe('classic');
+    });
+
+    test('createUser stores a valid avatar selection', () => {
+      const user = DB.createUser('user1', 'abc123', 'colorful');
+      expect(user.avatar).toBe('colorful');
+      const raw = JSON.parse(localStorage.getItem('foreman_users'));
+      expect(raw[0].avatar).toBe('colorful');
+    });
+
+    test('createUser rejects an invalid avatar selection', () => {
+      expect(() => DB.createUser('user1', 'abc123', 'banana')).toThrow(/invalid avatar/i);
+    });
+
+    test('updateUser changes avatar with valid value', () => {
+      const user = DB.createUser('user1', 'abc123', 'classic');
+      const updated = DB.updateUser(user.id, { avatar: 'light' });
+      expect(updated.avatar).toBe('light');
+    });
+
+    test('updateUser rejects an invalid avatar selection', () => {
+      const user = DB.createUser('user1', 'abc123');
+      expect(() => DB.updateUser(user.id, { avatar: 'nope' })).toThrow(/invalid avatar/i);
+    });
+  });
+
+  describe('api level', () => {
+    test('register passes the selected avatar through to the db', async () => {
+      const user = await API.register('user1', 'abc123', 'colorful');
+      expect(user.avatar).toBe('colorful');
+    });
+
+    test('register defaults avatar when omitted', async () => {
+      const user = await API.register('user1', 'abc123');
+      expect(user.avatar).toBe('classic');
+    });
+
+    test('updateProfile can change only the avatar', async () => {
+      await API.register('user1', 'abc123', 'classic');
+      const updated = await API.updateProfile('abc123', '', '', 'light');
+      expect(updated.avatar).toBe('light');
+      const session = JSON.parse(sessionStorage.getItem('foreman_session'));
+      expect(session.avatar).toBe('light');
+    });
+
+    test('updateProfile rejects an unchanged avatar with no other changes', async () => {
+      await API.register('user1', 'abc123', 'classic');
+      await expect(API.updateProfile('abc123', '', '', 'classic')).rejects.toThrow(/no changes/i);
+    });
+  });
+
+  describe('ui level', () => {
+    let container;
+
+    beforeEach(() => {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+    });
+
+    afterEach(() => {
+      container.remove();
+    });
+
+    const flush = () => new Promise((r) => setTimeout(r, API.NETWORK_DELAY + 20));
+
+    test('profile card renders the user avatar image', async () => {
+      await API.register('user1', 'abc123', 'colorful');
+      UI.renderProfile(container);
+      await flush();
+      const avatar = container.querySelector('.profile-avatar');
+      expect(avatar).not.toBeNull();
+      expect(avatar.getAttribute('src')).toContain('foreman-mascot-colorful.svg');
+    });
+
+    test('register form submits the selected avatar', async () => {
+      UI.renderProfile(container);
+      await flush();
+      container.querySelector('.profile-link').click();
+      const form = container.querySelector('.profile-form');
+      expect(form.querySelector('.avatar-selector-container')).not.toBeNull();
+      form.querySelector('input[name="username"]').value = 'user1';
+      form.querySelector('input[name="password"]').value = 'abc123';
+      form.querySelector('input[name="confirm"]').value = 'abc123';
+      form.querySelector('.avatar-radio[value="light"]').checked = true;
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await flush();
+      await flush();
+      const stored = DB.getUserByUsername('user1');
+      expect(stored.avatar).toBe('light');
+      const avatar = container.querySelector('.profile-avatar');
+      expect(avatar.getAttribute('src')).toContain('foreman-mascot-light.svg');
+    });
+
+    test('edit form submits an updated avatar', async () => {
+      await API.register('user1', 'abc123', 'classic');
+      UI.renderProfile(container);
+      await flush();
+      container.querySelector('.profile-card .profile-btn').click();
+      const form = container.querySelector('.profile-form');
+      const selector = form.querySelector('.avatar-selector-container');
+      expect(selector).not.toBeNull();
+      expect(form.querySelector('.avatar-radio[value="classic"]').checked).toBe(true);
+      form.querySelector('input[name="current"]').value = 'abc123';
+      form.querySelector('.avatar-radio[value="colorful"]').checked = true;
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await flush();
+      await flush();
+      const stored = DB.getUserByUsername('user1');
+      expect(stored.avatar).toBe('colorful');
+    });
+  });
+});
