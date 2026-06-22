@@ -165,7 +165,7 @@ function getUserByUsername(username) {
   return null;
 }
 
-var VALID_AVATARS = ['classic', 'colorful', 'light'];
+var VALID_AVATARS = ['classic', 'colorful', 'light', 'forest', 'crimson', 'midnight'];
 
 function isValidAvatar(avatar) {
   for (var i = 0; i < VALID_AVATARS.length; i++) {

@@ -399,6 +399,13 @@ describe('Avatar Customization', () => {
       expect(() => DB.createUser('user1', 'abc123', 'banana')).toThrow(/invalid avatar/i);
     });
 
+    test('createUser accepts forest, crimson, and midnight avatars', () => {
+      ['forest', 'crimson', 'midnight'].forEach((avatar) => {
+        const user = DB.createUser('test_' + avatar, 'abc123', avatar);
+        expect(user.avatar).toBe(avatar);
+      });
+    });
+
     test('updateUser changes avatar with valid value', () => {
       const user = DB.createUser('user1', 'abc123', 'classic');
       const updated = DB.updateUser(user.id, { avatar: 'light' });
@@ -479,6 +486,19 @@ describe('Avatar Customization', () => {
       const avatar = container.querySelector('.profile-avatar');
       expect(avatar).not.toBeNull();
       expect(avatar.getAttribute('src')).toContain('foreman-mascot-colorful.svg');
+    });
+
+    test('register form exposes all six avatar options', async () => {
+      UI.renderProfile(container);
+      await flush();
+      container.querySelector('.profile-link').click();
+      const form = container.querySelector('.profile-form');
+      const radios = form.querySelectorAll('.avatar-radio');
+      expect(radios.length).toBe(6);
+      const values = Array.prototype.map.call(radios, (r) => r.value);
+      expect(values).toEqual(
+        expect.arrayContaining(['classic', 'colorful', 'light', 'forest', 'crimson', 'midnight'])
+      );
     });
 
     test('register form submits the selected avatar', async () => {

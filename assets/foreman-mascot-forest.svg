@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" shape-rendering="crispEdges" image-rendering="pixelated">
+  <!-- Hard Hat -->
+  <rect x="20" y="4" width="24" height="4" fill="#4caf50"/>
+  <rect x="16" y="8" width="32" height="6" fill="#4caf50"/>
+  <rect x="14" y="14" width="36" height="2" fill="#388e3c"/>
+  <!-- Face -->
+  <rect x="22" y="16" width="20" height="16" fill="#e8b87a"/>
+  <!-- Eyes -->
+  <rect x="26" y="20" width="4" height="4" fill="#2c2416"/>
+  <rect x="34" y="20" width="4" height="4" fill="#2c2416"/>
+  <!-- Mouth -->
+  <rect x="28" y="28" width="8" height="2" fill="#2c2416"/>
+  <!-- Body / Overalls -->
+  <rect x="20" y="32" width="24" height="18" fill="#795548"/>
+  <!-- Overall straps -->
+  <rect x="24" y="32" width="4" height="8" fill="#5d4037"/>
+  <rect x="36" y="32" width="4" height="8" fill="#5d4037"/>
+  <!-- Overall buckles -->
+  <rect x="25" y="34" width="2" height="2" fill="#f5c518"/>
+  <rect x="37" y="34" width="2" height="2" fill="#f5c518"/>
+  <!-- Tool Belt -->
+  <rect x="18" y="44" width="28" height="4" fill="#5c4033"/>
+  <rect x="20" y="44" width="4" height="4" fill="#7a6e5f"/>
+  <rect x="40" y="44" width="4" height="4" fill="#7a6e5f"/>
+  <!-- Clipboard (right hand) -->
+  <rect x="46" y="30" width="10" height="14" fill="#d4c9a8"/>
+  <rect x="48" y="28" width="6" height="4" fill="#5c4033"/>
+  <rect x="48" y="34" width="6" height="2" fill="#2c2416"/>
+  <rect x="48" y="38" width="6" height="2" fill="#2c2416"/>
+  <rect x="48" y="42" width="4" height="2" fill="#2c2416"/>
+  <!-- Legs -->
+  <rect x="22" y="50" width="8" height="10" fill="#795548"/>
+  <rect x="34" y="50" width="8" height="10" fill="#795548"/>
+  <!-- Boots -->
+  <rect x="20" y="58" width="12" height="6" fill="#3e2723"/>
+  <rect x="32" y="58" width="12" height="6" fill="#3e2723"/>
+</svg>
