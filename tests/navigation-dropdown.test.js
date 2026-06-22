@@ -16,11 +16,11 @@ describe('navigation dropdown — DOM structure', () => {
     document.body.innerHTML = indexHtml;
   });
 
-  test('main .tab-nav contains exactly pipeline, harness, profile, users buttons', () => {
+  test('main .tab-nav contains exactly pipeline, harness, profile, users, messages buttons', () => {
     const nav = document.querySelector('nav.tab-nav');
     expect(nav).not.toBeNull();
     const ids = Array.from(nav.querySelectorAll(':scope > .tab-btn')).map((b) => b.id);
-    expect(ids).toEqual(['tab-pipeline', 'tab-harness', 'tab-profile', 'tab-users']);
+    expect(ids).toEqual(['tab-pipeline', 'tab-harness', 'tab-profile', 'tab-users', 'tab-messages']);
   });
 
   test('games menu toggle and list exist', () => {

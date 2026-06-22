@@ -98,6 +98,7 @@
     <button class="tab-btn" data-tab="harness" role="tab" aria-selected="false" id="tab-harness" aria-controls="panel-harness">🚧 Harness</button>
     <button class="tab-btn" data-tab="profile" role="tab" aria-selected="false" id="tab-profile" aria-controls="panel-profile">👤 Profile</button>
     <button class="tab-btn" data-tab="users" role="tab" aria-selected="false" id="tab-users" aria-controls="panel-users">🧑‍🤝‍🧑 Users</button>
+    <button class="tab-btn" data-tab="messages" role="tab" aria-selected="false" id="tab-messages" aria-controls="panel-messages">💬 Messages</button>
   </nav>
   <main>
     <div id="panel-pipeline" class="tab-panel active" role="tabpanel" aria-labelledby="tab-pipeline">
@@ -137,6 +138,9 @@
     <div id="panel-users" class="tab-panel" role="tabpanel" aria-labelledby="tab-users">
       <div id="users-container"></div>
     </div>
+    <div id="panel-messages" class="tab-panel" role="tabpanel" aria-labelledby="tab-messages">
+      <div id="messages-container"></div>
+    </div>
   </main>
   <script defer src="js/arrow-geometry.js"></script>
   <script defer src="js/game.js"></script>
@@ -146,6 +150,9 @@
   <script defer src="js/profile-db.js"></script>
   <script defer src="js/profile-api.js"></script>
   <script defer src="js/profile-ui.js"></script>
+  <script defer src="js/messages-db.js"></script>
+  <script defer src="js/messages-api.js"></script>
+  <script defer src="js/messages-ui.js"></script>
   <script src="js/app.js" defer></script>
 </body>
 </html>
