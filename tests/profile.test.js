@@ -430,6 +430,28 @@ describe('Avatar Customization', () => {
       expect(session.avatar).toBe('light');
     });
 
+    test('updateProfile changes only the avatar with NO password', async () => {
+      await API.register('user1', 'abc123', 'classic');
+      const updated = await API.updateProfile('', '', '', 'light');
+      expect(updated.avatar).toBe('light');
+      const session = JSON.parse(sessionStorage.getItem('foreman_session'));
+      expect(session.avatar).toBe('light');
+    });
+
+    test('updateProfile still requires a password when username changes alongside avatar', async () => {
+      await API.register('user1', 'abc123', 'classic');
+      await expect(API.updateProfile('', 'user2', '', 'light')).rejects.toThrow(/current password is required/i);
+      await expect(API.updateProfile('wrong1', 'user2', '', 'light')).rejects.toThrow(/incorrect/i);
+      const ok = await API.updateProfile('abc123', 'user2', '', 'light');
+      expect(ok.username).toBe('user2');
+      expect(ok.avatar).toBe('light');
+    });
+
+    test('updateProfile still requires a password when password changes', async () => {
+      await API.register('user1', 'abc123', 'classic');
+      await expect(API.updateProfile('', '', 'newpass1', '')).rejects.toThrow(/current password is required/i);
+    });
+
     test('updateProfile rejects an unchanged avatar with no other changes', async () => {
       await API.register('user1', 'abc123', 'classic');
       await expect(API.updateProfile('abc123', '', '', 'classic')).rejects.toThrow(/no changes/i);
@@ -494,6 +516,39 @@ describe('Avatar Customization', () => {
       await flush();
       const stored = DB.getUserByUsername('user1');
       expect(stored.avatar).toBe('colorful');
+    });
+
+    test('edit form submits an avatar-only change without a password', async () => {
+      await API.register('user1', 'abc123', 'classic');
+      UI.renderProfile(container);
+      await flush();
+      container.querySelector('.profile-card .profile-btn').click();
+      const form = container.querySelector('.profile-form');
+      // leave input[name="current"] empty
+      form.querySelector('.avatar-radio[value="colorful"]').checked = true;
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await flush();
+      await flush();
+      const stored = DB.getUserByUsername('user1');
+      expect(stored.avatar).toBe('colorful');
+      expect(form.querySelector('.error-banner')).toBeNull();
+    });
+
+    test('edit form blocks a username change with no password', async () => {
+      await API.register('user1', 'abc123', 'classic');
+      UI.renderProfile(container);
+      await flush();
+      container.querySelector('.profile-card .profile-btn').click();
+      const form = container.querySelector('.profile-form');
+      form.querySelector('input[name="username"]').value = 'user2';
+      // leave input[name="current"] empty
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await flush();
+      const banner = form.querySelector('.error-banner');
+      expect(banner).not.toBeNull();
+      expect(banner.textContent).toMatch(/current password is required/i);
+      const stored = DB.getUserByUsername('user1');
+      expect(stored.username).toBe('user1'); // unchanged
     });
   });
 });
