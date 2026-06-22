@@ -940,6 +940,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ProfileUI && usersContainer && typeof ProfileUI.renderUsers === 'function') {
           ProfileUI.renderUsers(usersContainer);
         }
+      } else if (targetTab === 'messages') {
+        if (demoActive) stopDemo();
+        const Game = (typeof window !== 'undefined' && window.ForemanGame);
+        if (Game) Game.stopGame();
+        const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
+        if (BugSquash) BugSquash.stopAnim();
+        const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
+        if (Snake) Snake.stopSnake();
+        const MessagesUI = (typeof window !== 'undefined' && window.ForemanMessagesUI);
+        const messagesContainer = document.getElementById('messages-container');
+        if (MessagesUI && messagesContainer && typeof MessagesUI.renderMessages === 'function') {
+          window.ForemanMessagesUI.renderMessages(messagesContainer);
+        }
       } else {
         const Game = (typeof window !== 'undefined' && window.ForemanGame);
         if (Game) Game.stopGame();
