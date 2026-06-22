@@ -262,7 +262,20 @@ header p {
 }
 
 .games-menu-toggle {
+  font-family: 'VT323', monospace;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s, transform 0.1s;
   white-space: nowrap;
+}
+
+.games-menu-toggle:hover {
+  transform: translateY(-2px);
 }
 
 .games-menu.open .games-menu-toggle {

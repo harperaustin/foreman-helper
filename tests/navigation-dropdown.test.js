@@ -287,6 +287,32 @@ describe('navigation dropdown — interaction', () => {
     expect(document.getElementById('panel-snake').classList.contains('active')).toBe(true);
   });
 
+  test('clicking the games toggle does NOT change the active theme (regression)', () => {
+    loadApp();
+
+    // Switch to a non-dark theme via a real theme control.
+    const lightBtn = document.querySelector('.theme-btn[data-theme="light"]');
+    expect(lightBtn).not.toBeNull();
+    lightBtn.click();
+    expect(document.body.classList.contains('theme-light')).toBe(true);
+
+    // Clicking the games dropdown toggle must not run the theme logic.
+    const toggle = document.getElementById('games-menu-toggle');
+    toggle.click();
+
+    // Theme is unchanged: still light, not reset to dark.
+    expect(document.body.classList.contains('theme-light')).toBe(true);
+    expect(document.body.classList.contains('theme-colorful')).toBe(false);
+    expect(document.body.classList.contains('theme-professional')).toBe(false);
+
+    // The toggle is not treated as a theme control.
+    expect(toggle.classList.contains('theme-btn')).toBe(false);
+    expect(toggle.hasAttribute('data-theme')).toBe(false);
+    // Real theme button state still reflects the chosen theme.
+    expect(lightBtn.classList.contains('active')).toBe(true);
+    expect(lightBtn.getAttribute('aria-pressed')).toBe('true');
+  });
+
   test('missing dropdown markup is a safe no-op', () => {
     jest.resetModules();
     document.body.innerHTML = `

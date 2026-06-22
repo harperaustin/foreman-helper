@@ -42,8 +42,8 @@ function setTheme(themeName) {
   // Persist preference
   try { localStorage.setItem('foreman-theme', themeName); } catch (e) { /* ignore */ }
 
-  // Update button states
-  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+  // Update button states (only real theme controls with a data-theme value)
+  document.querySelectorAll('.theme-btn[data-theme]').forEach(function(btn) {
     var isActive = btn.getAttribute('data-theme') === themeName;
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
@@ -770,8 +770,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   setTheme(savedTheme);
 
-  // Attach theme button listeners
-  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+  // Attach theme button listeners (only real theme controls with a data-theme value)
+  document.querySelectorAll('.theme-btn[data-theme]').forEach(function(btn) {
     btn.addEventListener('click', function() {
       setTheme(btn.getAttribute('data-theme'));
     });
