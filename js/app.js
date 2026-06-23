@@ -842,6 +842,93 @@ document.addEventListener('DOMContentLoaded', () => {
   let harnessInitialized = false;
   let snakeInitialized = false;
 
+  // --- Message notifications ---
+  const MessagesAPIForNotify = (typeof window !== 'undefined' && window.ForemanMessagesAPI);
+  const Notify = (typeof window !== 'undefined' && window.ForemanMessagesNotify);
+  let messagesBaseline = null;        // {createdAt,id} | null
+  let messagesCurrentUserId = null;   // signed-in user id | null
+
+  function messagesTabActive() {
+    const panel = document.getElementById('panel-messages');
+    return !!(panel && panel.classList.contains('active'));
+  }
+
+  // Shared inbox render used by BOTH the tab-click handler and the poll.
+  function refreshMessagesInbox() {
+    const MessagesUI = (typeof window !== 'undefined' && window.ForemanMessagesUI);
+    const messagesContainer = document.getElementById('messages-container');
+    if (MessagesUI && messagesContainer && typeof MessagesUI.renderMessages === 'function') {
+      window.ForemanMessagesUI.renderMessages(messagesContainer);
+    }
+  }
+
+  function pollMessages() {
+    if (!MessagesAPIForNotify || !Notify) return;
+    MessagesAPIForNotify.getCurrentUser().then(function(me) {
+      // Signed out: hide toast, clear baseline + identity, no-op.
+      if (!me || !me.id) {
+        messagesCurrentUserId = null;
+        messagesBaseline = null;
+        Notify.hide();
+        return;
+      }
+      // New / changed user (incl. first sign-in): reset so next decide SEEDS (no false toast).
+      if (me.id !== messagesCurrentUserId) {
+        messagesCurrentUserId = me.id;
+        messagesBaseline = null;
+        Notify.hide();
+      }
+      return MessagesAPIForNotify.inbox().then(function(list) {
+        const active = messagesTabActive();
+        const result = Notify.decideNotification(list, messagesBaseline, active);
+        messagesBaseline = result.newBaseline;
+        if (active) {
+          // On the Messages panel: re-render live so new messages show without a refresh.
+          refreshMessagesInbox();
+          Notify.hide();
+        } else if (result.show) {
+          Notify.show();
+        } else {
+          Notify.hide();
+        }
+      });
+    }).catch(function() {
+      // Error path (e.g. inbox rejected): fail safe — hide toast, no throw.
+      Notify.hide();
+    });
+  }
+
+  if (MessagesAPIForNotify && Notify) {
+    // Single-start guard + cleanup so repeated DOMContentLoaded dispatches (jsdom) don't stack timers.
+    if (typeof window !== 'undefined' && window.__foremanMessagesPollId) {
+      clearInterval(window.__foremanMessagesPollId);
+    }
+
+    // EAGER auth-transition reset (fixes signed-out-baseline-gap race):
+    // profile-ui.js dispatches 'foreman:auth-changed' after EACH in-place auth mutation
+    // (login, register, logout). Reset immediately so a logout->same-user-login that happens
+    // BEFORE the next poll cycle cannot leave a stale baseline/identity (which would fire a
+    // false toast for messages that arrived while signed out). After this reset the FIRST
+    // post-login poll is seed-only (decideNotification's baseline==null branch).
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('foreman:auth-changed', function() {
+        Notify.hide();
+        messagesBaseline = null;
+        messagesCurrentUserId = null;
+      });
+    }
+
+    // Run once immediately to seed the baseline / establish initial state.
+    pollMessages();
+    window.__foremanMessagesPollId = setInterval(pollMessages, Notify.POLL_INTERVAL_MS);
+    // Dismiss button hides the box (does not advance baseline).
+    const notifEl = document.getElementById('message-notification');
+    if (notifEl) {
+      const closeBtn = notifEl.querySelector('.message-notification-close');
+      if (closeBtn) closeBtn.addEventListener('click', function() { Notify.hide(); });
+    }
+  }
+
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetTab = btn.dataset.tab;
@@ -948,10 +1035,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (BugSquash) BugSquash.stopAnim();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
-        const MessagesUI = (typeof window !== 'undefined' && window.ForemanMessagesUI);
-        const messagesContainer = document.getElementById('messages-container');
-        if (MessagesUI && messagesContainer && typeof MessagesUI.renderMessages === 'function') {
-          window.ForemanMessagesUI.renderMessages(messagesContainer);
+        refreshMessagesInbox();
+        // Opening Messages marks everything seen: hide the toast and advance the baseline.
+        if (Notify) Notify.hide();
+        if (MessagesAPIForNotify && Notify) {
+          MessagesAPIForNotify.inbox().then(function(list) {
+            messagesBaseline = Notify.newestKey(list);
+          }).catch(function() {});
         }
       } else {
         const Game = (typeof window !== 'undefined' && window.ForemanGame);
