@@ -142,6 +142,10 @@
       <div id="messages-container"></div>
     </div>
   </main>
+  <div id="message-notification" class="message-notification" role="status" aria-live="polite" hidden>
+    <span class="message-notification-text">You have new messages</span>
+    <button type="button" class="message-notification-close" aria-label="Dismiss notification">&#10005;</button>
+  </div>
   <script defer src="js/arrow-geometry.js"></script>
   <script defer src="js/game.js"></script>
   <script defer src="js/bug-squash.js"></script>
@@ -153,6 +157,7 @@
   <script defer src="js/messages-db.js"></script>
   <script defer src="js/messages-api.js"></script>
   <script defer src="js/messages-ui.js"></script>
+  <script defer src="js/messages-notify.js"></script>
   <script src="js/app.js" defer></script>
 </body>
 </html>

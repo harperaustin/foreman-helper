@@ -79,6 +79,14 @@ function showBanner(form, type, message) {
   form.insertBefore(banner, form.firstChild);
 }
 
+function emitAuthChanged() {
+  if (typeof window !== 'undefined' &&
+      typeof window.dispatchEvent === 'function' &&
+      typeof window.CustomEvent === 'function') {
+    window.dispatchEvent(new window.CustomEvent('foreman:auth-changed'));
+  }
+}
+
 function setLoading(form, loading, label) {
   var controls = form.querySelectorAll('input, button');
   for (var i = 0; i < controls.length; i++) {
@@ -153,6 +161,7 @@ function renderProfile(container) {
       }
       setLoading(form, true);
       api.login(u, p).then(function() {
+        emitAuthChanged();
         renderView();
       }).catch(function(err) {
         setLoading(form, false);
@@ -221,6 +230,7 @@ function renderProfile(container) {
       var avatar = selectedAvatarValue(form);
       setLoading(form, true);
       api.register(u, p, avatar).then(function() {
+        emitAuthChanged();
         renderView();
       }).catch(function(err) {
         setLoading(form, false);
@@ -261,7 +271,10 @@ function renderProfile(container) {
     var logoutBtn = el('button', 'profile-link', 'Log Out');
     logoutBtn.type = 'button';
     logoutBtn.addEventListener('click', function() {
-      api.logout().then(renderLogin);
+      api.logout().then(function() {
+        emitAuthChanged();
+        renderLogin();
+      });
     });
     card.appendChild(logoutBtn);
 

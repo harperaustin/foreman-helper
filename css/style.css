@@ -1141,6 +1141,49 @@ body.theme-professional .success-banner {
   font-size: 0.9rem;
 }
 
+/* Message notification box */
+.message-notification {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 320px;
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.3s ease-in-out;
+}
+.message-notification[hidden] {
+  display: none;
+}
+.message-notification-close {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+}
+body.theme-professional .message-notification {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .message-notification {
+    animation: none;
+  }
+}
+
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
