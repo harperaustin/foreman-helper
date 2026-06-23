@@ -1087,6 +1087,13 @@ body.theme-professional .harness-subtitle {
     padding: 1rem;
     box-shadow: 4px 4px 0 var(--accent);
   }
+  .chats-section {
+    margin: 1rem auto;
+    padding: 1rem;
+  }
+  .chat-list {
+    max-height: 220px;
+  }
 }
 
 /* Profile — Professional theme overrides */
@@ -1515,6 +1522,160 @@ body.theme-professional .messages-inbox-title {
 }
 body.theme-professional .messages-input,
 body.theme-professional .messages-btn {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  border-radius: 6px;
+}
+
+/* ===== Chats ===== */
+.chats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 4px solid var(--accent);
+  box-shadow: 6px 6px 0 var(--accent);
+}
+
+.chats-title,
+.chat-group-title {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  color: var(--accent);
+  text-align: center;
+  margin: 0;
+}
+
+.chat-group-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-group-select {
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  padding: 0.4rem;
+  min-height: 90px;
+  background: var(--bg);
+  color: var(--text);
+  border: 2px solid var(--accent);
+}
+
+.chat-group-btn,
+.chat-reply-btn {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.7rem;
+  padding: 0.6rem 0.9rem;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.chat-group-btn:hover:not(:disabled),
+.chat-reply-btn:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+}
+
+.chat-group-btn:disabled,
+.chat-reply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.chat-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: left;
+  padding: 0.6rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  cursor: pointer;
+  font-family: 'VT323', monospace;
+  font-size: 1.05rem;
+}
+
+.chat-list-item:hover {
+  background: var(--surface);
+}
+
+.chat-list-preview {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-active {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-msg-own {
+  align-self: flex-end;
+  max-width: 85%;
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.chat-msg-own .message-meta,
+.chat-msg-own .message-time {
+  color: var(--bg);
+}
+
+.chat-msg-other {
+  align-self: flex-start;
+  max-width: 85%;
+}
+
+.chat-reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-reply-input {
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  padding: 0.6rem;
+  min-height: 70px;
+  resize: vertical;
+  background: var(--bg);
+  color: var(--text);
+  border: 2px solid var(--accent);
+}
+
+/* Chats — Professional theme overrides */
+body.theme-professional .chats-section {
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  background: var(--surface);
+}
+body.theme-professional .chat-list-item,
+body.theme-professional .chat-reply-form {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   border-radius: 6px;
 }

@@ -56,6 +56,7 @@ function formatDate(iso) {
 function renderMessages(container) {
   if (!container) return;
   var api = getAPI();
+  var chatControls = null;
 
   container.innerHTML = '';
   container.appendChild(el('h2', 'messages-list-title', 'Messages'));
@@ -166,16 +167,185 @@ function renderMessages(container) {
       }
       var toUsername = select.options[select.selectedIndex] ? select.options[select.selectedIndex].textContent : '';
       setLoading(form, true);
-      api.send(toId, toUsername, body).then(function() {
+      api.send(toId, toUsername, body).then(function(record) {
         setLoading(form, false);
         bodyEl.value = '';
         showBanner(form, 'success', 'Message sent.');
         renderInbox();
+        if (chatControls) {
+          chatControls.refresh();
+          if (record && record.chatId) chatControls.open(record.chatId);
+        }
       }).catch(function(err) {
         setLoading(form, false);
         showBanner(form, 'error', err.message);
       });
     });
+  }
+
+  function renderChatSection(me) {
+    var wrapper = el('div', 'chats-section');
+    wrapper.appendChild(el('h2', 'chats-title', 'Chats'));
+
+    // ---- Group create form ----
+    var groupForm = el('form', 'chat-group-form');
+    groupForm.appendChild(el('h2', 'chat-group-title', 'New Group Chat'));
+    var groupSelect = el('select', 'chat-group-select');
+    groupSelect.setAttribute('multiple', 'multiple');
+    groupSelect.setAttribute('aria-label', 'Group participants');
+    var groupBtn = el('button', 'chat-group-btn', 'Create group chat');
+    groupBtn.type = 'submit';
+    groupForm.appendChild(groupSelect);
+    groupForm.appendChild(groupBtn);
+
+    api.listRecipients().then(function(users) {
+      if (!users) return;
+      for (var i = 0; i < users.length; i++) {
+        var user = users[i];
+        var opt = el('option');
+        opt.value = user.id;
+        opt.appendChild(document.createTextNode(user.username == null ? '' : String(user.username)));
+        groupSelect.appendChild(opt);
+      }
+    }).catch(function() {});
+
+    groupForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var ids = [];
+      for (var i = 0; i < groupSelect.options.length; i++) {
+        if (groupSelect.options[i].selected) ids.push(groupSelect.options[i].value);
+      }
+      if (ids.length < 2) {
+        showBanner(groupForm, 'error', 'Select at least two people for a group chat.');
+        return;
+      }
+      setLoading(groupForm, true);
+      api.createGroupChat(ids).then(function(chat) {
+        setLoading(groupForm, false);
+        showBanner(groupForm, 'success', 'Group chat ready.');
+        refreshChatList();
+        openActiveChat(chat.id);
+      }).catch(function(err) {
+        setLoading(groupForm, false);
+        showBanner(groupForm, 'error', err.message);
+      });
+    });
+
+    // ---- Chat list ----
+    var chatList = el('div', 'chat-list');
+
+    // ---- Active chat pane ----
+    var activePane = el('div', 'chat-active');
+    activePane.appendChild(el('p', 'messages-empty', 'Select a chat to view its history.'));
+
+    function refreshChatList() {
+      api.listChats().then(function(chats) {
+        chatList.innerHTML = '';
+        if (!chats || chats.length === 0) {
+          chatList.appendChild(el('p', 'messages-empty', 'No chats yet.'));
+          return;
+        }
+        for (var i = 0; i < chats.length; i++) {
+          (function(chat) {
+            var item = el('button', 'chat-list-item');
+            item.type = 'button';
+            item.dataset.chatId = chat.id;
+            var others = [];
+            for (var j = 0; j < chat.participantUsernames.length; j++) {
+              if (chat.participants[j] !== me.id) {
+                others.push(chat.participantUsernames[j]);
+              }
+            }
+            var label = (chat.isGroup ? '\uD83D\uDC65 ' : '') + others.join(', ');
+            var labelEl = el('span', 'chat-list-label');
+            labelEl.appendChild(document.createTextNode(label));
+            item.appendChild(labelEl);
+            if (chat.lastMessage && chat.lastMessage.body) {
+              var preview = el('span', 'chat-list-preview');
+              preview.appendChild(document.createTextNode(String(chat.lastMessage.body)));
+              item.appendChild(preview);
+            }
+            item.addEventListener('click', function() {
+              openActiveChat(chat.id);
+            });
+            chatList.appendChild(item);
+          })(chats[i]);
+        }
+      }).catch(function() {
+        chatList.innerHTML = '';
+        chatList.appendChild(el('p', 'messages-empty', 'Could not load chats.'));
+      });
+    }
+
+    function openActiveChat(chatId) {
+      activePane.innerHTML = '';
+      var thread = el('div', 'chat-thread');
+      activePane.appendChild(thread);
+
+      function renderThread() {
+        return api.chatMessages(chatId).then(function(msgs) {
+          thread.innerHTML = '';
+          if (!msgs || msgs.length === 0) {
+            thread.appendChild(el('p', 'messages-empty', 'No messages yet.'));
+            return;
+          }
+          for (var i = 0; i < msgs.length; i++) {
+            var msg = msgs[i];
+            var item = el('div', 'message-item ' + (msg.fromId === me.id ? 'chat-msg-own' : 'chat-msg-other'));
+            var meta = el('div', 'message-meta');
+            meta.appendChild(document.createTextNode(msg.fromUsername == null ? '' : String(msg.fromUsername)));
+            meta.appendChild(el('span', 'message-time', formatDate(msg.createdAt)));
+            var bodyDiv = el('div', 'message-body');
+            bodyDiv.appendChild(document.createTextNode(msg.body == null ? '' : String(msg.body)));
+            item.appendChild(meta);
+            item.appendChild(bodyDiv);
+            thread.appendChild(item);
+          }
+        });
+      }
+
+      renderThread().catch(function(err) {
+        showBanner(activePane, 'error', err.message);
+      });
+
+      var replyForm = el('form', 'chat-reply-form');
+      var replyInput = el('textarea', 'chat-reply-input');
+      replyInput.setAttribute('aria-label', 'Reply');
+      replyInput.placeholder = 'Write a reply...';
+      var replyBtn = el('button', 'chat-reply-btn', 'Send');
+      replyBtn.type = 'submit';
+      replyForm.appendChild(replyInput);
+      replyForm.appendChild(replyBtn);
+      activePane.appendChild(replyForm);
+
+      replyForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var body = replyInput.value.trim();
+        if (!body) {
+          showBanner(replyForm, 'error', 'Message body is required.');
+          return;
+        }
+        setLoading(replyForm, true);
+        api.sendToChat(chatId, body).then(function() {
+          setLoading(replyForm, false);
+          replyInput.value = '';
+          showBanner(replyForm, 'success', 'Message sent.');
+          renderThread();
+          refreshChatList();
+        }).catch(function(err) {
+          setLoading(replyForm, false);
+          showBanner(replyForm, 'error', err.message);
+        });
+      });
+    }
+
+    wrapper.appendChild(groupForm);
+    wrapper.appendChild(chatList);
+    wrapper.appendChild(activePane);
+    container.appendChild(wrapper);
+
+    chatControls = { refresh: refreshChatList, open: openActiveChat };
+    refreshChatList();
   }
 
   api.getCurrentUser().then(function(me) {
@@ -185,6 +355,7 @@ function renderMessages(container) {
     }
     renderComposer(me);
     renderInbox();
+    renderChatSection(me);
   }).catch(renderSignedOut);
 }
 
