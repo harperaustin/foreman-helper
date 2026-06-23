@@ -1679,3 +1679,79 @@ body.theme-professional .chat-reply-form {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   border-radius: 6px;
 }
+
+/* ===== Real-time message notification toast ===== */
+.foreman-notification {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  max-width: 320px;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  animation: slideIn 0.3s ease-out;
+}
+
+.foreman-notification.foreman-notification-hiding {
+  animation: fadeOut 0.3s ease-in forwards;
+}
+
+.foreman-notification .notification-content {
+  display: block;
+  padding-right: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.foreman-notification .notification-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.foreman-notification .notification-close:hover {
+  color: var(--accent);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .foreman-notification {
+    top: auto;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+}

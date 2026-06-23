@@ -3,6 +3,13 @@
 // inbox, wiring them to ForemanMessagesAPI. All user-supplied text is rendered
 // with textContent / createTextNode to prevent XSS.
 
+// Module-scoped refresh hooks and notification state. These are populated by
+// renderMessages so the real-time engine can refresh the active views.
+var refreshInboxFn = null;
+var chatControls = null;
+var seenMessageIds = {};
+var lastUserId = null;
+
 function getAPI() {
   if (typeof window !== 'undefined' && window.ForemanMessagesAPI) {
     return window.ForemanMessagesAPI;
@@ -11,6 +18,26 @@ function getAPI() {
     return require('./messages-api.js');
   }
   return null;
+}
+
+function getDB() {
+  if (typeof window !== 'undefined' && window.ForemanMessagesDB) {
+    return window.ForemanMessagesDB;
+  }
+  if (typeof module !== 'undefined' && module.exports) {
+    return require('./messages-db.js');
+  }
+  return null;
+}
+
+function getSession() {
+  try {
+    if (typeof sessionStorage === 'undefined') return null;
+    var raw = sessionStorage.getItem('foreman_session');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 function el(tag, className, text) {
@@ -56,7 +83,7 @@ function formatDate(iso) {
 function renderMessages(container) {
   if (!container) return;
   var api = getAPI();
-  var chatControls = null;
+  chatControls = null;
 
   container.innerHTML = '';
   container.appendChild(el('h2', 'messages-list-title', 'Messages'));
@@ -68,6 +95,7 @@ function renderMessages(container) {
   }
 
   function renderInbox() {
+    refreshInboxFn = renderInbox;
     var prior = container.querySelector('.messages-inbox');
     if (prior) prior.parentNode.removeChild(prior);
 
@@ -308,6 +336,11 @@ function renderMessages(container) {
         showBanner(activePane, 'error', err.message);
       });
 
+      if (chatControls) {
+        chatControls.refreshActiveThread = renderThread;
+        chatControls.activeChatId = chatId;
+      }
+
       var replyForm = el('form', 'chat-reply-form');
       var replyInput = el('textarea', 'chat-reply-input');
       replyInput.setAttribute('aria-label', 'Reply');
@@ -359,8 +392,137 @@ function renderMessages(container) {
   }).catch(renderSignedOut);
 }
 
+// ===== Real-time refresh & notification engine =====
+
+function isMessageForMe(msg, me) {
+  if (!msg || !me || !me.id) return false;
+  if (msg.fromId === me.id) return false;
+  if (msg.toId === me.id) return true;
+  if (msg.chatId) {
+    var db = getDB();
+    var chat = db && db.getChat ? db.getChat(msg.chatId) : null;
+    if (chat && Array.isArray(chat.participants) && chat.participants.indexOf(me.id) >= 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function showNotificationBox() {
+  if (typeof document === 'undefined' || !document.body) return null;
+  // Only surface a single toast at a time.
+  if (document.querySelector('.foreman-notification')) return null;
+
+  var box = el('div', 'foreman-notification');
+  box.setAttribute('role', 'status');
+  box.appendChild(el('span', 'notification-content', 'You have new messages'));
+
+  var close = el('button', 'notification-close', '\u00D7');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Dismiss notification');
+  box.appendChild(close);
+
+  function dismiss() {
+    if (box.parentNode) box.parentNode.removeChild(box);
+  }
+
+  close.addEventListener('click', function(e) {
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    dismiss();
+  });
+
+  box.addEventListener('click', function() {
+    var tabBtn = document.getElementById('tab-messages');
+    if (tabBtn) tabBtn.click();
+    dismiss();
+  });
+
+  document.body.appendChild(box);
+  return box;
+}
+
+function handleIncomingMessages() {
+  var panel = typeof document !== 'undefined' ? document.getElementById('panel-messages') : null;
+  if (panel && panel.classList.contains('active')) {
+    if (typeof refreshInboxFn === 'function') refreshInboxFn();
+    if (chatControls) {
+      chatControls.refresh();
+      if (chatControls.refreshActiveThread) chatControls.refreshActiveThread();
+    }
+  } else {
+    showNotificationBox();
+  }
+}
+
+function checkNewMessages() {
+  var db = getDB();
+  if (!db) return;
+  var me = getSession();
+  var meId = me && me.id ? me.id : null;
+  var messages = db.loadMessages();
+
+  // On login/logout/switch, reset the cache to existing history so we never
+  // notify about messages that predate the current session.
+  if (meId !== lastUserId) {
+    lastUserId = meId;
+    seenMessageIds = {};
+    for (var i = 0; i < messages.length; i++) {
+      if (messages[i] && messages[i].id) seenMessageIds[messages[i].id] = true;
+    }
+    return;
+  }
+
+  if (!meId) return;
+
+  var incoming = [];
+  for (var j = 0; j < messages.length; j++) {
+    var m = messages[j];
+    if (!m || !m.id) continue;
+    if (seenMessageIds[m.id]) continue;
+    seenMessageIds[m.id] = true;
+    if (isMessageForMe(m, me)) incoming.push(m);
+  }
+
+  if (incoming.length > 0) {
+    handleIncomingMessages();
+  }
+}
+
+if (typeof window !== 'undefined') {
+  // Always point at the latest module instance's checker so listeners
+  // registered once still invoke up-to-date state.
+  window.__foremanNotifyCheck = checkNewMessages;
+
+  if (!window.__foremanNotifyInit) {
+    window.__foremanNotifyInit = true;
+
+    // Seed the cache with whatever is already stored.
+    checkNewMessages();
+
+    window.addEventListener('storage', function(e) {
+      if (!e || e.key === null || e.key === 'foreman_messages') {
+        if (typeof window.__foremanNotifyCheck === 'function') window.__foremanNotifyCheck();
+      }
+    });
+
+    window.addEventListener('foreman-message-added', function() {
+      if (typeof window.__foremanNotifyCheck === 'function') window.__foremanNotifyCheck();
+    });
+
+    if (typeof setInterval === 'function') {
+      setInterval(function() {
+        if (typeof window.__foremanNotifyCheck === 'function') window.__foremanNotifyCheck();
+      }, 1000);
+    }
+  }
+}
+
 var ForemanMessagesUI = {
-  renderMessages: renderMessages
+  renderMessages: renderMessages,
+  checkNewMessages: checkNewMessages,
+  handleIncomingMessages: handleIncomingMessages,
+  showNotificationBox: showNotificationBox,
+  isMessageForMe: isMessageForMe
 };
 
 if (typeof window !== 'undefined') {

@@ -369,3 +369,100 @@ describe('app.js Messages tab wiring', () => {
     expect(renderMessages).toHaveBeenCalledWith(document.getElementById('messages-container'));
   });
 });
+
+describe('real-time message notifications', () => {
+  const flushNotify = () => new Promise((r) => setTimeout(r, MAPI.NETWORK_DELAY * 4 + 50));
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  afterEach(() => {
+    document.querySelectorAll('.foreman-notification').forEach((n) => n.remove());
+    document.body.innerHTML = '';
+  });
+
+  test('sendMessage dispatches a foreman-message-added event with the record', () => {
+    const handler = jest.fn();
+    window.addEventListener('foreman-message-added', handler);
+    const rec = MDB.sendMessage('a', 'Alice', 'b', 'Bob', 'hi');
+    window.removeEventListener('foreman-message-added', handler);
+    expect(handler).toHaveBeenCalled();
+    const evt = handler.mock.calls[handler.mock.calls.length - 1][0];
+    expect(evt.detail).toBeTruthy();
+    expect(evt.detail.id).toBe(rec.id);
+    expect(evt.detail.body).toBe('hi');
+  });
+
+  test('postChatMessage dispatches a foreman-message-added event with the record', () => {
+    const chat = MDB.getOrCreateChat(['a', 'b']);
+    const handler = jest.fn();
+    window.addEventListener('foreman-message-added', handler);
+    const rec = MDB.postChatMessage(chat.id, 'a', 'Alice', 'hello chat');
+    window.removeEventListener('foreman-message-added', handler);
+    expect(handler).toHaveBeenCalled();
+    const evt = handler.mock.calls[handler.mock.calls.length - 1][0];
+    expect(evt.detail.id).toBe(rec.id);
+    expect(evt.detail.body).toBe('hello chat');
+  });
+
+  test('shows a popup when a message arrives while off the messages page', async () => {
+    const alice = await PAPI.register('alice', 'password1');
+    const bob = PDB.createUser('bob', 'password1');
+    // Seed the cache so prior history is not treated as new.
+    MUI.checkNewMessages();
+    document.querySelectorAll('.foreman-notification').forEach((n) => n.remove());
+
+    MDB.sendMessage(bob.id, 'bob', alice.id, 'alice', 'hi alice');
+
+    const box = document.querySelector('.foreman-notification');
+    expect(box).not.toBeNull();
+    expect(box.textContent).toContain('You have new messages');
+  });
+
+  test('clicking the popup activates the messages tab and dismisses it', () => {
+    document.body.innerHTML =
+      '<button id="tab-messages"></button>' +
+      '<section id="panel-messages" class="tab-panel"></section>' +
+      '<section id="panel-other" class="tab-panel active"></section>';
+    const tab = document.getElementById('tab-messages');
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab-panel').forEach((p) => {
+        p.classList.toggle('active', p.id === 'panel-messages');
+      });
+    });
+
+    const box = MUI.showNotificationBox();
+    expect(box).not.toBeNull();
+    box.click();
+
+    expect(document.getElementById('panel-messages').classList.contains('active')).toBe(true);
+    expect(document.querySelector('.foreman-notification')).toBeNull();
+  });
+
+  test('clicking the close button dismisses the popup', () => {
+    const box = MUI.showNotificationBox();
+    expect(document.querySelector('.foreman-notification')).not.toBeNull();
+    box.querySelector('.notification-close').click();
+    expect(document.querySelector('.foreman-notification')).toBeNull();
+  });
+
+  test('refreshes in place instead of showing a popup when on the messages page', async () => {
+    const alice = await PAPI.register('alice', 'password1');
+    const bob = PDB.createUser('bob', 'password1');
+    document.body.innerHTML =
+      '<section id="panel-messages" class="tab-panel active"><div id="messages-container"></div></section>';
+    const container = document.getElementById('messages-container');
+    MUI.renderMessages(container);
+    await flushNotify();
+    await flushNotify();
+
+    MUI.checkNewMessages();
+    document.querySelectorAll('.foreman-notification').forEach((n) => n.remove());
+
+    MDB.sendMessage(bob.id, 'bob', alice.id, 'alice', 'live message');
+
+    expect(document.querySelector('.foreman-notification')).toBeNull();
+    expect(container.querySelector('.messages-inbox')).not.toBeNull();
+  });
+});
