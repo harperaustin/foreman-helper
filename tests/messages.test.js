@@ -287,6 +287,88 @@ describe('ForemanMessagesUI', () => {
     expect(bodyEl.innerHTML).not.toContain('<img src');
     expect(container.querySelector('.message-meta').querySelector('b')).toBeNull();
   });
+
+  test('updateInbox preserves composer draft while surfacing new messages', async () => {
+    const alice = await PAPI.register('alice', 'password1');
+    const bob = PDB.createUser('bob', 'password1');
+    MDB.sendMessage(bob.id, 'bob', alice.id, 'alice', 'first');
+    MUI.renderMessages(container);
+    await flush();
+    await flush();
+
+    const textarea = container.querySelector('.messages-body');
+    const select = container.querySelector('select');
+    // Simulate in-progress typing + recipient selection.
+    textarea.value = 'draft in progress';
+    select.value = bob.id;
+
+    // A new message arrives between polls.
+    MDB.sendMessage(bob.id, 'bob', alice.id, 'alice', 'second new');
+
+    MUI.updateInbox(container);
+    await flush();
+    await flush();
+
+    // Composer node identity + draft + recipient selection survive the refresh.
+    expect(container.querySelector('.messages-body')).toBe(textarea);
+    expect(textarea.value).toBe('draft in progress');
+    expect(select.value).toBe(bob.id);
+    // New message visible live; existing message still present.
+    expect(container.querySelector('.messages-thread').textContent).toMatch(/second new/);
+    expect(container.querySelector('.messages-thread').textContent).toMatch(/first/);
+  });
+
+  test('updateInbox preserves open chat reply draft and shows new thread messages', async () => {
+    const alice = await PAPI.register('alice', 'password1');
+    const bob = PDB.createUser('bob', 'password1');
+    // Seed a DM so a chat exists, then drive the UI to open the chat pane.
+    MDB.sendMessage(bob.id, 'bob', alice.id, 'alice', 'hi');
+    MUI.renderMessages(container);
+    await flush();
+    await flush();
+    await flush();
+
+    const chatItem = container.querySelector('.chat-list-item');
+    expect(chatItem).not.toBeNull();
+    chatItem.click();
+    await flush();
+    await flush();
+
+    const active = container.querySelector('.chat-active');
+    const chatId = active.dataset.chatId;
+    expect(chatId).toBeTruthy();
+
+    const reply = container.querySelector('.chat-reply-input');
+    expect(reply).not.toBeNull();
+    reply.value = 'typing a reply...';
+
+    // Incoming chat message from bob via the real low-level write API.
+    MDB.postChatMessage(chatId, bob.id, 'bob', 'new chat message');
+
+    MUI.updateInbox(container);
+    await flush();
+    await flush();
+
+    // Reply textarea node identity + draft survive the refresh.
+    expect(container.querySelector('.chat-reply-input')).toBe(reply);
+    expect(reply.value).toBe('typing a reply...');
+    // Newly arrived chat message is visible live in the thread.
+    expect(container.querySelector('.chat-thread').textContent).toMatch(/new chat message/);
+  });
+
+  test('updateInbox(null) does not throw', () => {
+    expect(() => MUI.updateInbox(null)).not.toThrow();
+  });
+
+  test('updateInbox falls back to full render when nothing rendered yet', async () => {
+    // Fresh container with no rendered Messages panel and no signed-in user.
+    MUI.updateInbox(container);
+    await flush();
+    await flush();
+    const empty = container.querySelector('.messages-empty');
+    expect(empty).not.toBeNull();
+    expect(empty.textContent).toMatch(/sign in/i);
+  });
 });
 
 describe('index.html structure', () => {

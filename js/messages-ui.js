@@ -53,6 +53,94 @@ function formatDate(iso) {
   return d.toLocaleString();
 }
 
+// Module-level builder: (re)fill the inbox list contents. Contains no user
+// inputs, so rebuilding it in place is always safe. Structure/classes are kept
+// byte-identical to the original inline renderInbox loop.
+function fillInboxList(list, messages) {
+  list.innerHTML = '';
+  if (!messages || messages.length === 0) {
+    list.appendChild(el('p', 'messages-empty', 'No messages yet.'));
+    return;
+  }
+  for (var i = 0; i < messages.length; i++) {
+    var msg = messages[i];
+    var item = el('div', 'message-item');
+
+    var meta = el('div', 'message-meta');
+    meta.appendChild(el('span', 'message-from', 'From: '));
+    // username rendered via text node — never innerHTML (XSS-safe)
+    meta.appendChild(document.createTextNode(msg.fromUsername == null ? '' : String(msg.fromUsername)));
+    meta.appendChild(el('span', 'message-time', formatDate(msg.createdAt)));
+
+    var bodyDiv = el('div', 'message-body');
+    // body rendered via text node — never innerHTML (XSS-safe)
+    bodyDiv.appendChild(document.createTextNode(msg.body == null ? '' : String(msg.body)));
+
+    item.appendChild(meta);
+    item.appendChild(bodyDiv);
+    list.appendChild(item);
+  }
+}
+
+// Module-level builder: (re)fill an open chat thread. Only rebuilds the
+// message list — never the reply textarea. Structure/classes kept identical.
+function fillChatThread(thread, msgs, me) {
+  thread.innerHTML = '';
+  if (!msgs || msgs.length === 0) {
+    thread.appendChild(el('p', 'messages-empty', 'No messages yet.'));
+    return;
+  }
+  for (var i = 0; i < msgs.length; i++) {
+    var msg = msgs[i];
+    var item = el('div', 'message-item ' + (msg.fromId === me.id ? 'chat-msg-own' : 'chat-msg-other'));
+    var meta = el('div', 'message-meta');
+    meta.appendChild(document.createTextNode(msg.fromUsername == null ? '' : String(msg.fromUsername)));
+    meta.appendChild(el('span', 'message-time', formatDate(msg.createdAt)));
+    var bodyDiv = el('div', 'message-body');
+    bodyDiv.appendChild(document.createTextNode(msg.body == null ? '' : String(msg.body)));
+    item.appendChild(meta);
+    item.appendChild(bodyDiv);
+    thread.appendChild(item);
+  }
+}
+
+// Module-level builder: (re)fill the chat list (buttons/previews only — no user
+// input), wiring each item to onOpen(chatId). Reused by the full render and the
+// incremental poll refresh so newly created chats / updated previews surface live.
+function fillChatList(chatList, chats, me, onOpen) {
+  chatList.innerHTML = '';
+  if (!chats || chats.length === 0) {
+    chatList.appendChild(el('p', 'messages-empty', 'No chats yet.'));
+    return;
+  }
+  for (var i = 0; i < chats.length; i++) {
+    (function(chat) {
+      var item = el('button', 'chat-list-item');
+      item.type = 'button';
+      item.dataset.chatId = chat.id;
+      var others = [];
+      for (var j = 0; j < chat.participantUsernames.length; j++) {
+        if (chat.participants[j] !== me.id) {
+          others.push(chat.participantUsernames[j]);
+        }
+      }
+      var label = (chat.isGroup ? '\uD83D\uDC65 ' : '') + others.join(', ');
+      var labelEl = el('span', 'chat-list-label');
+      labelEl.appendChild(document.createTextNode(label));
+      item.appendChild(labelEl);
+      if (chat.lastMessage && chat.lastMessage.body) {
+        var preview = el('span', 'chat-list-preview');
+        preview.appendChild(document.createTextNode(String(chat.lastMessage.body)));
+        item.appendChild(preview);
+      }
+      item.addEventListener('click', function() {
+        onOpen(chat.id);
+      });
+      chatList.appendChild(item);
+    })(chats[i]);
+  }
+}
+
 function renderMessages(container) {
   if (!container) return;
   var api = getAPI();
@@ -78,29 +166,7 @@ function renderMessages(container) {
     container.appendChild(inbox);
 
     api.inbox().then(function(messages) {
-      list.innerHTML = '';
-      if (!messages || messages.length === 0) {
-        list.appendChild(el('p', 'messages-empty', 'No messages yet.'));
-        return;
-      }
-      for (var i = 0; i < messages.length; i++) {
-        var msg = messages[i];
-        var item = el('div', 'message-item');
-
-        var meta = el('div', 'message-meta');
-        meta.appendChild(el('span', 'message-from', 'From: '));
-        // username rendered via text node — never innerHTML (XSS-safe)
-        meta.appendChild(document.createTextNode(msg.fromUsername == null ? '' : String(msg.fromUsername)));
-        meta.appendChild(el('span', 'message-time', formatDate(msg.createdAt)));
-
-        var bodyDiv = el('div', 'message-body');
-        // body rendered via text node — never innerHTML (XSS-safe)
-        bodyDiv.appendChild(document.createTextNode(msg.body == null ? '' : String(msg.body)));
-
-        item.appendChild(meta);
-        item.appendChild(bodyDiv);
-        list.appendChild(item);
-      }
+      fillInboxList(list, messages);
     }).catch(function() {
       list.innerHTML = '';
       list.appendChild(el('p', 'messages-empty', 'Could not load messages.'));
@@ -240,37 +306,7 @@ function renderMessages(container) {
 
     function refreshChatList() {
       api.listChats().then(function(chats) {
-        chatList.innerHTML = '';
-        if (!chats || chats.length === 0) {
-          chatList.appendChild(el('p', 'messages-empty', 'No chats yet.'));
-          return;
-        }
-        for (var i = 0; i < chats.length; i++) {
-          (function(chat) {
-            var item = el('button', 'chat-list-item');
-            item.type = 'button';
-            item.dataset.chatId = chat.id;
-            var others = [];
-            for (var j = 0; j < chat.participantUsernames.length; j++) {
-              if (chat.participants[j] !== me.id) {
-                others.push(chat.participantUsernames[j]);
-              }
-            }
-            var label = (chat.isGroup ? '\uD83D\uDC65 ' : '') + others.join(', ');
-            var labelEl = el('span', 'chat-list-label');
-            labelEl.appendChild(document.createTextNode(label));
-            item.appendChild(labelEl);
-            if (chat.lastMessage && chat.lastMessage.body) {
-              var preview = el('span', 'chat-list-preview');
-              preview.appendChild(document.createTextNode(String(chat.lastMessage.body)));
-              item.appendChild(preview);
-            }
-            item.addEventListener('click', function() {
-              openActiveChat(chat.id);
-            });
-            chatList.appendChild(item);
-          })(chats[i]);
-        }
+        fillChatList(chatList, chats, me, openActiveChat);
       }).catch(function() {
         chatList.innerHTML = '';
         chatList.appendChild(el('p', 'messages-empty', 'Could not load chats.'));
@@ -279,28 +315,13 @@ function renderMessages(container) {
 
     function openActiveChat(chatId) {
       activePane.innerHTML = '';
+      activePane.dataset.chatId = String(chatId);
       var thread = el('div', 'chat-thread');
       activePane.appendChild(thread);
 
       function renderThread() {
         return api.chatMessages(chatId).then(function(msgs) {
-          thread.innerHTML = '';
-          if (!msgs || msgs.length === 0) {
-            thread.appendChild(el('p', 'messages-empty', 'No messages yet.'));
-            return;
-          }
-          for (var i = 0; i < msgs.length; i++) {
-            var msg = msgs[i];
-            var item = el('div', 'message-item ' + (msg.fromId === me.id ? 'chat-msg-own' : 'chat-msg-other'));
-            var meta = el('div', 'message-meta');
-            meta.appendChild(document.createTextNode(msg.fromUsername == null ? '' : String(msg.fromUsername)));
-            meta.appendChild(el('span', 'message-time', formatDate(msg.createdAt)));
-            var bodyDiv = el('div', 'message-body');
-            bodyDiv.appendChild(document.createTextNode(msg.body == null ? '' : String(msg.body)));
-            item.appendChild(meta);
-            item.appendChild(bodyDiv);
-            thread.appendChild(item);
-          }
+          fillChatThread(thread, msgs, me);
         });
       }
 
@@ -345,6 +366,10 @@ function renderMessages(container) {
     container.appendChild(wrapper);
 
     chatControls = { refresh: refreshChatList, open: openActiveChat };
+    // Expose the open handler on the container so the non-destructive poll
+    // refresh (updateInbox) can rebuild the chat list with working click
+    // handlers without re-rendering the whole section.
+    container.__foremanChatControls = { open: openActiveChat };
     refreshChatList();
   }
 
@@ -359,8 +384,54 @@ function renderMessages(container) {
   }).catch(renderSignedOut);
 }
 
+// Non-destructive poll refresh: re-fetches data and rebuilds ONLY the inbox
+// list, the open chat thread, and the chat list (buttons/previews) in place.
+// It deliberately never touches the composer <select>/.messages-body textarea,
+// the group form, or the open .chat-reply-input textarea — preserving any
+// in-progress typed text and avoiding scroll jumps on each 4s poll.
+function updateInbox(container) {
+  if (!container) return;                       // null-safe (mirrors renderMessages)
+  var api = getAPI();
+  if (!api) return;
+  var list = container.querySelector('.messages-inbox .messages-thread');
+  // If the panel isn't in a signed-in rendered state yet, fall back to a full render.
+  if (!list) { renderMessages(container); return; }
+  api.getCurrentUser().then(function(me) {
+    if (!me) { renderMessages(container); return; } // signed out → show prompt
+    // 1) Inbox list (no inputs here) — rebuild contents only.
+    api.inbox().then(function(messages) {
+      fillInboxList(list, messages);
+    }).catch(function() {
+      list.innerHTML = '';
+      list.appendChild(el('p', 'messages-empty', 'Could not load messages.'));
+    });
+    // 2) Chat list (buttons/previews only) — rebuild in place so new chats /
+    //    updated last-message previews surface live. Reuses the open handler
+    //    captured at full-render time so clicks still open the active pane.
+    var chatList = container.querySelector('.chat-list');
+    var controls = container.__foremanChatControls;
+    if (chatList && controls && typeof controls.open === 'function') {
+      api.listChats().then(function(chats) {
+        fillChatList(chatList, chats, me, controls.open);
+      }).catch(function() {});
+    }
+    // 3) Open chat thread (if any) — rebuild ONLY .chat-thread, leaving the
+    //    reply textarea (and its in-progress draft) fully intact.
+    var active = container.querySelector('.chat-active');
+    if (active && active.dataset && active.dataset.chatId) {
+      var thread = active.querySelector('.chat-thread');
+      if (thread) {
+        api.chatMessages(active.dataset.chatId).then(function(msgs) {
+          fillChatThread(thread, msgs, me);
+        }).catch(function() {});
+      }
+    }
+  }).catch(function() {});
+}
+
 var ForemanMessagesUI = {
-  renderMessages: renderMessages
+  renderMessages: renderMessages,
+  updateInbox: updateInbox
 };
 
 if (typeof window !== 'undefined') {

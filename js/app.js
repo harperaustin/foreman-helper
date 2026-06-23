@@ -862,6 +862,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Incremental inbox refresh used by the poll: prefers the non-destructive
+  // updateInbox (preserves composer/reply drafts + scroll), falling back to a
+  // full render only when the incremental API is unavailable.
+  function updateMessagesInbox() {
+    const MessagesUI = (typeof window !== 'undefined' && window.ForemanMessagesUI);
+    const messagesContainer = document.getElementById('messages-container');
+    if (!MessagesUI || !messagesContainer) return;
+    if (typeof MessagesUI.updateInbox === 'function') {
+      MessagesUI.updateInbox(messagesContainer);
+    } else if (typeof MessagesUI.renderMessages === 'function') {
+      MessagesUI.renderMessages(messagesContainer);   // fallback
+    }
+  }
+
   function pollMessages() {
     if (!MessagesAPIForNotify || !Notify) return;
     MessagesAPIForNotify.getCurrentUser().then(function(me) {
@@ -883,8 +897,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const result = Notify.decideNotification(list, messagesBaseline, active);
         messagesBaseline = result.newBaseline;
         if (active) {
-          // On the Messages panel: re-render live so new messages show without a refresh.
-          refreshMessagesInbox();
+          // On the Messages panel: incrementally refresh so new messages show
+          // without tearing down composer/reply drafts on each poll.
+          updateMessagesInbox();
           Notify.hide();
         } else if (result.show) {
           Notify.show();
