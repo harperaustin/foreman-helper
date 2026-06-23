@@ -61,6 +61,9 @@ function sendMessage(fromId, fromUsername, toId, toUsername, body, chatId) {
   var messages = loadMessages();
   messages.push(record);
   saveMessages(messages);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('foreman-message-added', { detail: record }));
+  }
   return record;
 }
 
@@ -298,6 +301,9 @@ function postChatMessage(chatId, fromId, fromUsername, body) {
   var messages = loadMessages();
   messages.push(record);
   saveMessages(messages);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('foreman-message-added', { detail: record }));
+  }
   return record;
 }
 
