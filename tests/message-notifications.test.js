@@ -211,6 +211,7 @@ describe('notification integration', () => {
   let currentUser;
   let inboxData;
   let renderMessages;
+  let updateInbox;
   let Notify;
 
   function flush() {
@@ -238,6 +239,7 @@ describe('notification integration', () => {
     currentUser = null;
     inboxData = [];
     renderMessages = jest.fn();
+    updateInbox = jest.fn();
 
     Notify = require('../js/messages-notify.js');
 
@@ -247,7 +249,8 @@ describe('notification integration', () => {
       inbox: function() { return Promise.resolve(inboxData); }
     };
     window.ForemanMessagesUI = {
-      renderMessages: renderMessages
+      renderMessages: renderMessages,
+      updateInbox: updateInbox
     };
   });
 
@@ -297,7 +300,7 @@ describe('notification integration', () => {
       { id: 'm2', createdAt: '2026-02-02T00:00:00Z' }
     ];
     await tick();
-    expect(renderMessages).toHaveBeenCalled();
+    expect(updateInbox).toHaveBeenCalled();
     expect(notifEl().hidden).toBe(true);
   });
 
