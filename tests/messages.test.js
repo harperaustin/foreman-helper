@@ -287,6 +287,46 @@ describe('ForemanMessagesUI', () => {
     expect(bodyEl.innerHTML).not.toContain('<img src');
     expect(container.querySelector('.message-meta').querySelector('b')).toBeNull();
   });
+
+  test('partial rendering preserves input values and form elements (non-jittery)', async () => {
+    await PAPI.register('alice', 'password1');
+    PDB.createUser('bob', 'password1');
+    MUI.renderMessages(container);
+    await flush();
+    await flush();
+
+    // Verify elements are initially rendered
+    const formBefore = container.querySelector('.messages-form');
+    expect(formBefore).not.toBeNull();
+
+    // Type a draft into the message body
+    const textarea = container.querySelector('.messages-body');
+    expect(textarea).not.toBeNull();
+    textarea.value = 'Draft message text';
+
+    // Select a recipient
+    const select = container.querySelector('select');
+    expect(select).not.toBeNull();
+    const bobUser = PDB.listUsers().find(u => u.username === 'bob');
+    select.value = bobUser.id;
+
+    // Trigger another render (simulating a polling interval)
+    MUI.renderMessages(container);
+    await flush();
+    await flush();
+
+    // Check that form elements are the EXACT SAME DOM nodes and value is preserved
+    const formAfter = container.querySelector('.messages-form');
+    expect(formAfter).toBe(formBefore); // Exact reference check!
+
+    const textareaAfter = container.querySelector('.messages-body');
+    expect(textareaAfter).toBe(textarea); // Exact reference check!
+    expect(textareaAfter.value).toBe('Draft message text'); // Preserved value check!
+
+    const selectAfter = container.querySelector('select');
+    expect(selectAfter).toBe(select); // Exact reference check!
+    expect(selectAfter.value).toBe(bobUser.id); // Preserved value check!
+  });
 });
 
 describe('index.html structure', () => {

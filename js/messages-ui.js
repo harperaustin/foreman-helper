@@ -58,53 +58,64 @@ function renderMessages(container) {
   var api = getAPI();
   var chatControls = null;
 
-  container.innerHTML = '';
-  container.appendChild(el('h2', 'messages-list-title', 'Messages'));
-
   function renderSignedOut() {
+    container.dataset.userId = '';
+    container._activeChatId = null;
+    container._refreshInbox = null;
+    container._refreshChatList = null;
+    container._refreshActiveThread = null;
+
     container.innerHTML = '';
     container.appendChild(el('h2', 'messages-list-title', 'Messages'));
     container.appendChild(el('div', 'messages-empty', 'Sign in on the Profile tab to send and read messages.'));
   }
 
   function renderInbox() {
-    var prior = container.querySelector('.messages-inbox');
-    if (prior) prior.parentNode.removeChild(prior);
+    var inbox = container.querySelector('.messages-inbox');
+    var list;
+    if (!inbox) {
+      inbox = el('div', 'messages-inbox');
+      inbox.appendChild(el('h2', 'messages-inbox-title', 'Inbox'));
+      list = el('div', 'messages-thread');
+      inbox.appendChild(list);
+      container.appendChild(inbox);
+    } else {
+      list = inbox.querySelector('.messages-thread');
+    }
 
-    var inbox = el('div', 'messages-inbox');
-    inbox.appendChild(el('h2', 'messages-inbox-title', 'Inbox'));
-    var list = el('div', 'messages-thread');
-    inbox.appendChild(list);
-    container.appendChild(inbox);
+    function refreshInbox() {
+      return api.inbox().then(function(messages) {
+        list.innerHTML = '';
+        if (!messages || messages.length === 0) {
+          list.appendChild(el('p', 'messages-empty', 'No messages yet.'));
+          return;
+        }
+        for (var i = 0; i < messages.length; i++) {
+          var msg = messages[i];
+          var item = el('div', 'message-item');
 
-    api.inbox().then(function(messages) {
-      list.innerHTML = '';
-      if (!messages || messages.length === 0) {
-        list.appendChild(el('p', 'messages-empty', 'No messages yet.'));
-        return;
-      }
-      for (var i = 0; i < messages.length; i++) {
-        var msg = messages[i];
-        var item = el('div', 'message-item');
+          var meta = el('div', 'message-meta');
+          meta.appendChild(el('span', 'message-from', 'From: '));
+          // username rendered via text node — never innerHTML (XSS-safe)
+          meta.appendChild(document.createTextNode(msg.fromUsername == null ? '' : String(msg.fromUsername)));
+          meta.appendChild(el('span', 'message-time', formatDate(msg.createdAt)));
 
-        var meta = el('div', 'message-meta');
-        meta.appendChild(el('span', 'message-from', 'From: '));
-        // username rendered via text node — never innerHTML (XSS-safe)
-        meta.appendChild(document.createTextNode(msg.fromUsername == null ? '' : String(msg.fromUsername)));
-        meta.appendChild(el('span', 'message-time', formatDate(msg.createdAt)));
+          var bodyDiv = el('div', 'message-body');
+          // body rendered via text node — never innerHTML (XSS-safe)
+          bodyDiv.appendChild(document.createTextNode(msg.body == null ? '' : String(msg.body)));
 
-        var bodyDiv = el('div', 'message-body');
-        // body rendered via text node — never innerHTML (XSS-safe)
-        bodyDiv.appendChild(document.createTextNode(msg.body == null ? '' : String(msg.body)));
+          item.appendChild(meta);
+          item.appendChild(bodyDiv);
+          list.appendChild(item);
+        }
+      }).catch(function() {
+        list.innerHTML = '';
+        list.appendChild(el('p', 'messages-empty', 'Could not load messages.'));
+      });
+    }
 
-        item.appendChild(meta);
-        item.appendChild(bodyDiv);
-        list.appendChild(item);
-      }
-    }).catch(function() {
-      list.innerHTML = '';
-      list.appendChild(el('p', 'messages-empty', 'Could not load messages.'));
-    });
+    container._refreshInbox = refreshInbox;
+    refreshInbox();
   }
 
   function renderComposer(me) {
@@ -278,6 +289,7 @@ function renderMessages(container) {
     }
 
     function openActiveChat(chatId) {
+      container._activeChatId = chatId;
       activePane.innerHTML = '';
       var thread = el('div', 'chat-thread');
       activePane.appendChild(thread);
@@ -303,6 +315,8 @@ function renderMessages(container) {
           }
         });
       }
+
+      container._refreshActiveThread = renderThread;
 
       renderThread().catch(function(err) {
         showBanner(activePane, 'error', err.message);
@@ -344,6 +358,7 @@ function renderMessages(container) {
     wrapper.appendChild(activePane);
     container.appendChild(wrapper);
 
+    container._refreshChatList = refreshChatList;
     chatControls = { refresh: refreshChatList, open: openActiveChat };
     refreshChatList();
   }
@@ -353,9 +368,34 @@ function renderMessages(container) {
       renderSignedOut();
       return;
     }
-    renderComposer(me);
-    renderInbox();
-    renderChatSection(me);
+
+    var lastUserId = container.dataset.userId || '';
+    var currentUserId = String(me.id);
+
+    if (currentUserId !== lastUserId || !container.querySelector('.messages-form')) {
+      container.innerHTML = '';
+      container.dataset.userId = currentUserId;
+      container._activeChatId = null;
+      container._refreshInbox = null;
+      container._refreshChatList = null;
+      container._refreshActiveThread = null;
+
+      container.appendChild(el('h2', 'messages-list-title', 'Messages'));
+
+      renderComposer(me);
+      renderInbox();
+      renderChatSection(me);
+    } else {
+      if (typeof container._refreshInbox === 'function') {
+        container._refreshInbox();
+      }
+      if (typeof container._refreshChatList === 'function') {
+        container._refreshChatList();
+      }
+      if (container._activeChatId && typeof container._refreshActiveThread === 'function') {
+        container._refreshActiveThread().catch(function() {});
+      }
+    }
   }).catch(renderSignedOut);
 }
 
