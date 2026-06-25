@@ -318,24 +318,25 @@ describe('ForemanMessagesUI chats', () => {
     expect(optionTexts).not.toContain('alice');
   });
 
-  test('sending via the legacy composer creates a chat, lists it, and opens its thread', async () => {
+  test('starting a new direct conversation creates a chat, lists it, opens its thread, and can send', async () => {
     await PAPI.register('alice', 'password1');
     const bob = PDB.createUser('bob', 'password1');
     MUI.renderMessages(container);
     await flush();
     await flush();
-    const select = container.querySelector('.messages-form select');
-    const textarea = container.querySelector('.messages-body');
-    select.value = bob.id;
-    textarea.value = 'hello bob';
-    container.querySelector('.messages-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    container.querySelector('.new-chat-select').value = bob.id;
+    container.querySelector('.new-chat-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     await flush();
     await flush();
     await flush();
     expect(container.querySelector('.chat-list-item')).not.toBeNull();
-    const thread = container.querySelector('.chat-active .chat-thread');
-    expect(thread).not.toBeNull();
-    expect(thread.querySelector('.message-item')).not.toBeNull();
+    expect(container.querySelector('.chat-active .chat-thread')).not.toBeNull();
+    // Send a message through the single reply form.
+    container.querySelector('.chat-reply-input').value = 'hello bob';
+    container.querySelector('.chat-reply-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await flush();
+    await flush();
+    expect(container.querySelector('.chat-active .chat-thread .message-item')).not.toBeNull();
   });
 
   test('creating a group chat shows it in the chat list and opens its thread', async () => {
@@ -431,35 +432,15 @@ describe('ForemanMessagesUI chats', () => {
     expect(bodyEl.textContent).toContain('<img');
     expect(bodyEl.innerHTML).not.toContain('<img src');
   });
-
-  test('legacy composer still works alongside chats', async () => {
-    await PAPI.register('alice', 'password1');
-    const bob = PDB.createUser('bob', 'password1');
-    MUI.renderMessages(container);
-    await flush();
-    await flush();
-    // composer select is the first select in DOM order
-    const firstSelect = container.querySelector('select');
-    expect(firstSelect.className).toContain('messages-input');
-    expect(firstSelect.hasAttribute('multiple')).toBe(false);
-    firstSelect.value = bob.id;
-    container.querySelector('.messages-body').value = 'hi via legacy';
-    container.querySelector('.messages-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    await flush();
-    await flush();
-    const banner = container.querySelector('.messages-form .success-banner');
-    expect(banner).not.toBeNull();
-    expect(banner.textContent).toMatch(/sent/i);
-  });
 });
 
 describe('chats source contracts', () => {
   test('css contains chat selectors and preserves contracts', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'style.css'), 'utf8');
-    ['.chats-section', '.chat-group-select', '.chat-list-item', '.chat-thread', '.chat-msg-own', '.chat-msg-other', '.chat-reply-form', '.chat-reply-input'].forEach((sel) => {
+    ['.chats-section', '.chat-group-select', '.chat-list-item', '.chat-thread', '.chat-msg-own', '.chat-msg-other', '.chat-reply-form', '.chat-reply-input', '.new-chat-select'].forEach((sel) => {
       expect(css).toContain(sel);
     });
     expect(css).toMatch(/@media \(max-width: 600px\)/);
-    expect(css).toMatch(/body\.theme-professional \.messages-form/);
+    expect(css).toMatch(/body\.theme-professional \.chats-section/);
   });
 });
