@@ -89,6 +89,7 @@
         <button class="tab-btn" data-tab="game" role="tab" aria-selected="false" id="tab-game" aria-controls="panel-game">🎮 Game</button>
         <button class="tab-btn" data-tab="bug-squash" role="tab" aria-selected="false" id="tab-bug-squash" aria-controls="panel-bug-squash">🐛 Bug Squash</button>
         <button class="tab-btn" data-tab="snake" role="tab" aria-selected="false" id="tab-snake" aria-controls="panel-snake">🐍 Snake</button>
+        <button class="tab-btn" data-tab="sand" role="tab" aria-selected="false" id="tab-sand" aria-controls="panel-sand">🏖️ Sandbox</button>
       </div>
     </div>
   </header>
@@ -129,6 +130,21 @@
         <ol id="snake-leaderboard-list"></ol>
       </div>
     </div>
+    <div id="panel-sand" class="tab-panel" role="tabpanel" aria-labelledby="tab-sand">
+      <h2 class="game-title">Falling Sandbox 🏖️</h2>
+      <p class="game-instructions">Pick an element and click/drag on the grid to paint. Watch sand fall fast, dirt drift slowly, water spread, and stone hold firm.</p>
+      <div class="sand-toolbar" id="sand-toolbar" role="group" aria-label="Element picker">
+        <button class="sand-element-btn active" data-element="sand" aria-pressed="true">Sand</button>
+        <button class="sand-element-btn" data-element="dirt" aria-pressed="false">Dirt</button>
+        <button class="sand-element-btn" data-element="stone" aria-pressed="false">Stone</button>
+        <button class="sand-element-btn" data-element="water" aria-pressed="false">Water</button>
+        <button class="sand-element-btn" data-element="empty" aria-pressed="false">Eraser</button>
+      </div>
+      <canvas id="sand-canvas" width="480" height="396"></canvas>
+      <div class="game-hud">
+        <button id="sand-clear-btn" class="demo-btn">🧹 Clear</button>
+      </div>
+    </div>
     <div id="panel-harness" class="tab-panel" role="tabpanel" aria-labelledby="tab-harness">
       <div id="harness-container"></div>
     </div>
@@ -151,6 +167,7 @@
   <script defer src="js/bug-squash.js"></script>
   <script defer src="js/harness.js"></script>
   <script defer src="js/snake.js"></script>
+  <script defer src="js/sand-game.js"></script>
   <script defer src="js/profile-db.js"></script>
   <script defer src="js/profile-api.js"></script>
   <script defer src="js/profile-ui.js"></script>

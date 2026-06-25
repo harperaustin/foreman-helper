@@ -788,6 +788,47 @@ describe('bug-squash tab DOM presence', () => {
   });
 });
 
+describe('sand tab DOM presence', () => {
+  beforeEach(() => {
+   document.body.innerHTML = require('fs').readFileSync(
+     require('path').resolve(__dirname, '../index.html'), 'utf8'
+   );
+  });
+
+  test('sand tab button exists with correct text', () => {
+   const btn = document.querySelector('[data-tab="sand"]');
+   expect(btn).not.toBeNull();
+   expect(btn.textContent).toContain('Sandbox');
+  });
+
+  test('sand panel and canvas exist', () => {
+   const panel = document.getElementById('panel-sand');
+   expect(panel).not.toBeNull();
+   const canvas = document.getElementById('sand-canvas');
+   expect(canvas).not.toBeNull();
+  });
+
+  test('sand toolbar has 5 element buttons with expected data-element values', () => {
+   const toolbar = document.getElementById('sand-toolbar');
+   expect(toolbar).not.toBeNull();
+   const btns = toolbar.querySelectorAll('.sand-element-btn');
+   expect(btns.length).toBe(5);
+   const elements = Array.prototype.map.call(btns, (b) => b.dataset.element);
+   expect(elements).toEqual(['sand', 'dirt', 'stone', 'water', 'empty']);
+  });
+
+  test('sand-game script is referenced before app.js', () => {
+   const html = require('fs').readFileSync(
+     require('path').resolve(__dirname, '../index.html'), 'utf8'
+   );
+   const sandIdx = html.indexOf('js/sand-game.js');
+   const appIdx = html.indexOf('js/app.js');
+   expect(sandIdx).toBeGreaterThan(-1);
+   expect(appIdx).toBeGreaterThan(-1);
+   expect(sandIdx).toBeLessThan(appIdx);
+  });
+});
+
 describe('professional theme CSS overrides', () => {
   test('professional theme CSS overrides retro fonts for tab-btn, game-title, game-hud, agent-detail h2', () => {
     const css = require('fs').readFileSync(require('path').join(__dirname, '..', 'css', 'style.css'), 'utf8');
@@ -798,6 +839,7 @@ describe('professional theme CSS overrides', () => {
     expect(css).toContain('body.theme-professional #agent-detail h2');
     expect(css).toContain('body.theme-professional #game-canvas');
     expect(css).toContain('body.theme-professional #bug-squash-canvas');
+    expect(css).toContain('body.theme-professional #sand-canvas');
     const tabBtnIdx = css.indexOf('body.theme-professional .tab-btn');
     const nextBlock = css.indexOf('}', tabBtnIdx);
     const tabBtnBlock = css.substring(tabBtnIdx, nextBlock);
