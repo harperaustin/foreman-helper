@@ -141,7 +141,7 @@ header {
 .mascot-right-arm,
 .mascot-left-leg,
 .mascot-right-leg {
-  transform-box: fill-box;
+  transform-box: view-box;
 }
 
 body.theme-professional .header-mascot-container {
