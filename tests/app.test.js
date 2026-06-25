@@ -825,6 +825,41 @@ describe('professional theme CSS overrides', () => {
   });
 });
 
+describe('mascot limb transform-box coordinate space', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const readCss = () =>
+    fs.readFileSync(path.join(__dirname, '..', 'css', 'style.css'), 'utf8');
+
+  test('limb groups use view-box transform-box so pivots resolve in SVG user space', () => {
+    const css = readCss();
+    // The shared limb rule that sets transform-box (the second occurrence of the
+    // .mascot-left-arm selector, which groups all four limbs with transform-box).
+    const ruleStart = css.indexOf('.mascot-left-arm,');
+    expect(ruleStart).toBeGreaterThan(-1);
+    const ruleEnd = css.indexOf('}', ruleStart);
+    const ruleBlock = css.substring(ruleStart, ruleEnd);
+    expect(ruleBlock).toContain('transform-box: view-box');
+    expect(ruleBlock).not.toContain('fill-box');
+  });
+
+  test('limb joint pivot transform-origins are unchanged (shoulders/hips)', () => {
+    const css = readCss();
+    expect(css).toContain('.mascot-left-arm { transform-origin: 18px 32px; }');
+    expect(css).toContain('.mascot-right-arm { transform-origin: 46px 32px; }');
+    expect(css).toContain('.mascot-left-leg { transform-origin: 26px 50px; }');
+    expect(css).toContain('.mascot-right-leg { transform-origin: 38px 50px; }');
+  });
+
+  test('drag (pickup) and walking-back states both animate the limbs', () => {
+    const css = readCss();
+    expect(css).toContain('.header-mascot-container.dragging .mascot-left-arm');
+    expect(css).toContain('.header-mascot-container.dragging .mascot-right-leg');
+    expect(css).toContain('.header-mascot-container.walking-back .mascot-left-arm');
+    expect(css).toContain('.header-mascot-container.walking-back .mascot-right-leg');
+  });
+});
+
 describe('game.js getFont theme detection', () => {
   test('getFont returns sans-serif font when professional theme is active', () => {
     document.body.classList.add('theme-professional');
