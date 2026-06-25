@@ -198,6 +198,72 @@ describe('clearGrid', () => {
   });
 });
 
+describe('water physics: at most one move per tick (regression)', () => {
+  afterEach(() => {
+    if (Math.random.mockRestore) Math.random.mockRestore();
+  });
+
+  function findWater() {
+    for (let row = 0; row < Sand.ROWS; row++) {
+      for (let col = 0; col < Sand.COLS; col++) {
+        if (Sand.getCell(col, row) === Sand.ELEMENTS.WATER) return { col, row };
+      }
+    }
+    return null;
+  }
+
+  test('water spreads at most one column (right bias) on a stone floor', () => {
+    jest.spyOn(global.Math, 'random').mockReturnValue(0.9);
+    const floorRow = Sand.ROWS - 1;
+    const startCol = 20;
+    const startRow = floorRow - 1;
+    // Lay a stone floor so water cannot fall and must spread sideways, then
+    // place a single water particle directly into the grid (no 5-cell brush).
+    const grid = Sand.getSandState().grid;
+    for (let c = 0; c < Sand.COLS; c++) grid[floorRow * Sand.COLS + c] = Sand.ELEMENTS.STONE;
+    grid[startRow * Sand.COLS + startCol] = Sand.ELEMENTS.WATER;
+
+    Sand.tick();
+
+    const after = findWater();
+    expect(after).not.toBeNull();
+    expect(Math.abs(after.col - startCol)).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.row - startRow)).toBeLessThanOrEqual(1);
+  });
+
+  test('water spreads at most one column (left bias) on a stone floor', () => {
+    jest.spyOn(global.Math, 'random').mockReturnValue(0.1);
+    const floorRow = Sand.ROWS - 1;
+    const startCol = 20;
+    const startRow = floorRow - 1;
+    const grid = Sand.getSandState().grid;
+    for (let c = 0; c < Sand.COLS; c++) grid[floorRow * Sand.COLS + c] = Sand.ELEMENTS.STONE;
+    grid[startRow * Sand.COLS + startCol] = Sand.ELEMENTS.WATER;
+
+    Sand.tick();
+
+    const after = findWater();
+    expect(after).not.toBeNull();
+    expect(Math.abs(after.col - startCol)).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.row - startRow)).toBeLessThanOrEqual(1);
+  });
+
+  test('falling water moves at most one row per tick', () => {
+    jest.spyOn(global.Math, 'random').mockReturnValue(0.9);
+    const startCol = 10;
+    const startRow = 0;
+    const grid = Sand.getSandState().grid;
+    grid[startRow * Sand.COLS + startCol] = Sand.ELEMENTS.WATER;
+
+    Sand.tick();
+
+    const after = findWater();
+    expect(after).not.toBeNull();
+    expect(after.row - startRow).toBeLessThanOrEqual(1);
+    expect(Math.abs(after.col - startCol)).toBeLessThanOrEqual(1);
+  });
+});
+
 describe('shared scope integration', () => {
   test('no redeclaration errors when all scripts load in same scope', () => {
     const fs = require('fs');

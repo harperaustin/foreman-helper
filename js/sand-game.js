@@ -25,6 +25,35 @@ var canvas = null;
 var ctx = null;
 var animFrameId = null;
 
+// Per-tick marker so each particle moves at most once per tick. A particle that
+// moves into a destination cell marks that index processed; the scan skips any
+// cell already marked so it is not visited (and moved) again the same tick.
+var processed = null;
+
+function allocProcessed() {
+  if (typeof Uint8Array !== 'undefined') {
+    processed = new Uint8Array(COLS * ROWS);
+  } else {
+    processed = [];
+    for (var i = 0; i < COLS * ROWS; i++) processed[i] = 0;
+  }
+}
+
+function clearProcessed() {
+  if (!processed) { allocProcessed(); return; }
+  for (var i = 0; i < COLS * ROWS; i++) processed[i] = 0;
+}
+
+function markProcessed(col, row) {
+  if (!inBounds(col, row)) return;
+  processed[row * COLS + col] = 1;
+}
+
+function isProcessed(col, row) {
+  if (!inBounds(col, row)) return false;
+  return processed[row * COLS + col] === 1;
+}
+
 var state = {
   grid: null,
   currentElement: ELEMENTS.SAND,
@@ -97,6 +126,7 @@ function trySwapDown(col, row) {
   if (getCell(col, row + 1) === ELEMENTS.EMPTY) {
     setCell(col, row, ELEMENTS.EMPTY);
     setCell(col, row + 1, val);
+    markProcessed(col, row + 1);
     return true;
   }
   // diagonal fall, randomized order
@@ -107,6 +137,7 @@ function trySwapDown(col, row) {
     if (inBounds(col + dc, row + 1) && getCell(col + dc, row + 1) === ELEMENTS.EMPTY) {
       setCell(col, row, ELEMENTS.EMPTY);
       setCell(col + dc, row + 1, val);
+      markProcessed(col + dc, row + 1);
       return true;
     }
   }
@@ -117,6 +148,7 @@ function tickWater(col, row) {
   if (getCell(col, row + 1) === ELEMENTS.EMPTY) {
     setCell(col, row, ELEMENTS.EMPTY);
     setCell(col, row + 1, ELEMENTS.WATER);
+    markProcessed(col, row + 1);
     return true;
   }
   // can't fall straight: try diagonal down
@@ -129,6 +161,7 @@ function tickWater(col, row) {
     if (inBounds(col + dc, row) && getCell(col + dc, row) === ELEMENTS.EMPTY) {
       setCell(col, row, ELEMENTS.EMPTY);
       setCell(col + dc, row, ELEMENTS.WATER);
+      markProcessed(col + dc, row);
       return true;
     }
   }
@@ -138,9 +171,13 @@ function tickWater(col, row) {
 function tick() {
   state.frameCount++;
   if (!state.grid) return getSandState();
+  clearProcessed();
   // Process bottom-up so particles fall at most one row per tick.
   for (var row = ROWS - 2; row >= 0; row--) {
     for (var col = 0; col < COLS; col++) {
+      // Skip cells already filled by a particle that moved this tick so each
+      // particle is visited (and moves) at most once per tick.
+      if (isProcessed(col, row)) continue;
       var val = getCell(col, row);
       if (val === ELEMENTS.EMPTY || val === ELEMENTS.STONE) continue;
       if (val === ELEMENTS.SAND) {
