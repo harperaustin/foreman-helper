@@ -187,23 +187,25 @@ describe('ForemanMessagesUI', () => {
     expect(() => MUI.renderMessages(null)).not.toThrow();
   });
 
-  test('signed-out state shows sign-in prompt and no form', async () => {
+  test('signed-out state shows sign-in prompt and no chat surface', async () => {
     MUI.renderMessages(container);
     await flush();
     const empty = container.querySelector('.messages-empty');
     expect(empty).not.toBeNull();
     expect(empty.textContent).toMatch(/sign in/i);
-    expect(container.querySelector('.messages-form')).toBeNull();
+    expect(container.querySelector('.chats-section')).toBeNull();
+    expect(container.querySelector('.chat-reply-form')).toBeNull();
   });
 
-  test('signed-in renders composer with recipient options excluding self', async () => {
+  test('signed-in renders the single messaging location with recipient picker excluding self', async () => {
     await PAPI.register('alice', 'password1');
     PDB.createUser('bob', 'password1');
     MUI.renderMessages(container);
     await flush();
     await flush();
-    expect(container.querySelector('.messages-form')).not.toBeNull();
-    const optionTexts = Array.from(container.querySelectorAll('select option')).map((o) => o.textContent);
+    expect(container.querySelector('.chats-section')).not.toBeNull();
+    expect(container.querySelector('.new-chat-select')).not.toBeNull();
+    const optionTexts = Array.from(container.querySelectorAll('.new-chat-select option')).map((o) => o.textContent);
     expect(optionTexts).toContain('bob');
     expect(optionTexts).not.toContain('alice');
   });
@@ -213,28 +215,37 @@ describe('ForemanMessagesUI', () => {
     MUI.renderMessages(container);
     await flush();
     await flush();
-    const submit = container.querySelector('.messages-btn');
-    const note = container.querySelector('.messages-form .messages-empty, .messages-form .error-banner');
+    const submit = container.querySelector('.new-chat-btn');
+    const note = container.querySelector('.new-chat-form .messages-empty, .new-chat-form .error-banner');
     expect((submit && submit.disabled === true) || note !== null).toBe(true);
   });
 
-  test('send flow shows success banner and clears textarea', async () => {
+  test('send flow via the single reply form shows success and clears input', async () => {
     const alice = await PAPI.register('alice', 'password1');
     const bob = PDB.createUser('bob', 'password1');
     MUI.renderMessages(container);
     await flush();
     await flush();
-    const select = container.querySelector('select');
-    const textarea = container.querySelector('.messages-body');
-    select.value = bob.id;
-    textarea.value = 'hello bob';
-    const form = container.querySelector('.messages-form');
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    // Start a direct conversation via the non-sending starter.
+    const newChatSelect = container.querySelector('.new-chat-select');
+    newChatSelect.value = bob.id;
+    const newChatForm = container.querySelector('.new-chat-form');
+    newChatForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     await flush();
     await flush();
-    expect(container.querySelector('.success-banner')).not.toBeNull();
-    expect(container.querySelector('.success-banner').textContent).toMatch(/sent/i);
-    expect(textarea.value).toBe('');
+    await flush();
+    // Now send through the single reply form.
+    const reply = container.querySelector('.chat-reply-input');
+    expect(reply).not.toBeNull();
+    reply.value = 'hello bob';
+    const replyForm = container.querySelector('.chat-reply-form');
+    replyForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await flush();
+    await flush();
+    const success = container.querySelector('.chat-active .success-banner');
+    expect(success).not.toBeNull();
+    expect(success.textContent).toMatch(/sent/i);
+    expect(container.querySelector('.chat-reply-input').value).toBe('');
     expect(MDB.getInbox(bob.id).length).toBe(1);
   });
 
@@ -244,32 +255,43 @@ describe('ForemanMessagesUI', () => {
     MUI.renderMessages(container);
     await flush();
     await flush();
-    const form = container.querySelector('.messages-form');
-    const select = container.querySelector('select');
-    const textarea = container.querySelector('.messages-body');
 
-    // missing recipient
-    select.value = '';
-    textarea.value = 'hello';
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    expect(container.querySelector('.error-banner').textContent).toMatch(/recipient/i);
+    // missing recipient on the new-chat starter
+    const newChatForm = container.querySelector('.new-chat-form');
+    const newChatSelect = container.querySelector('.new-chat-select');
+    newChatSelect.value = '';
+    newChatForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    expect(container.querySelector('.new-chat-form .error-banner').textContent).toMatch(/recipient/i);
 
-    // empty body
-    select.value = bob.id;
-    textarea.value = '   ';
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    expect(container.querySelector('.error-banner').textContent).toMatch(/required/i);
+    // empty body on the single reply form
+    newChatSelect.value = bob.id;
+    newChatForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await flush();
+    await flush();
+    await flush();
+    const reply = container.querySelector('.chat-reply-input');
+    expect(reply).not.toBeNull();
+    reply.value = '   ';
+    const replyForm = container.querySelector('.chat-reply-form');
+    replyForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    expect(container.querySelector('.chat-active .error-banner').textContent).toMatch(/required/i);
   });
 
-  test('inbox renders received messages', async () => {
+  test('messages render in the chat thread', async () => {
     const alice = await PAPI.register('alice', 'password1');
     const bob = PDB.createUser('bob', 'password1');
     MDB.sendMessage(bob.id, 'bob', alice.id, 'alice', 'hi alice');
     MUI.renderMessages(container);
     await flush();
     await flush();
-    expect(container.querySelector('.message-item')).not.toBeNull();
-    expect(container.querySelector('.message-body').textContent).toContain('hi alice');
+    await flush();
+    const chatItem = container.querySelector('.chat-list-item');
+    expect(chatItem).not.toBeNull();
+    chatItem.click();
+    await flush();
+    await flush();
+    expect(container.querySelector('.chat-thread .message-item')).not.toBeNull();
+    expect(container.querySelector('.chat-thread .message-body').textContent).toContain('hi alice');
   });
 
   test('XSS/injection: body and username rendered as text not HTML', async () => {
@@ -279,43 +301,44 @@ describe('ForemanMessagesUI', () => {
     MUI.renderMessages(container);
     await flush();
     await flush();
-    const item = container.querySelector('.message-item');
+    await flush();
+    const chatItem = container.querySelector('.chat-list-item');
+    expect(chatItem).not.toBeNull();
+    chatItem.click();
+    await flush();
+    await flush();
+    const item = container.querySelector('.chat-thread .message-item');
     expect(item).not.toBeNull();
-    const bodyEl = container.querySelector('.message-body');
+    const bodyEl = container.querySelector('.chat-thread .message-body');
     expect(bodyEl.querySelector('img')).toBeNull();
     expect(bodyEl.textContent).toContain('<img');
     expect(bodyEl.innerHTML).not.toContain('<img src');
-    expect(container.querySelector('.message-meta').querySelector('b')).toBeNull();
+    expect(container.querySelector('.chat-thread .message-meta').querySelector('b')).toBeNull();
   });
 
-  test('updateInbox preserves composer draft while surfacing new messages', async () => {
+  test('updateInbox preserves new-chat recipient selection and surfaces new chats', async () => {
     const alice = await PAPI.register('alice', 'password1');
     const bob = PDB.createUser('bob', 'password1');
-    MDB.sendMessage(bob.id, 'bob', alice.id, 'alice', 'first');
     MUI.renderMessages(container);
     await flush();
     await flush();
 
-    const textarea = container.querySelector('.messages-body');
-    const select = container.querySelector('select');
-    // Simulate in-progress typing + recipient selection.
-    textarea.value = 'draft in progress';
+    const select = container.querySelector('.new-chat-select');
+    // Simulate an in-progress recipient selection on the starter.
     select.value = bob.id;
 
-    // A new message arrives between polls.
-    MDB.sendMessage(bob.id, 'bob', alice.id, 'alice', 'second new');
+    // A new conversation arrives between polls (legacy DM backfilled to a chat).
+    MDB.sendMessage(bob.id, 'bob', alice.id, 'alice', 'ping');
 
     MUI.updateInbox(container);
     await flush();
     await flush();
 
-    // Composer node identity + draft + recipient selection survive the refresh.
-    expect(container.querySelector('.messages-body')).toBe(textarea);
-    expect(textarea.value).toBe('draft in progress');
+    // Starter node identity + recipient selection survive the refresh.
+    expect(container.querySelector('.new-chat-select')).toBe(select);
     expect(select.value).toBe(bob.id);
-    // New message visible live; existing message still present.
-    expect(container.querySelector('.messages-thread').textContent).toMatch(/second new/);
-    expect(container.querySelector('.messages-thread').textContent).toMatch(/first/);
+    // New conversation surfaced live in the chat list.
+    expect(container.querySelector('.chat-list-item')).not.toBeNull();
   });
 
   test('updateInbox preserves open chat reply draft and shows new thread messages', async () => {
@@ -394,14 +417,14 @@ describe('css/style.css messages rules', () => {
   const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'style.css'), 'utf8');
 
   test('contains required selectors', () => {
-    ['.messages-form', '.messages-input', '.messages-btn', '.messages-inbox', '.message-item', '.message-body', '.messages-empty'].forEach((sel) => {
+    ['.message-item', '.message-body', '.messages-empty', '.messages-list-title', '.chat-reply-form', '.chat-reply-input', '.new-chat-select'].forEach((sel) => {
       expect(css).toContain(sel);
     });
   });
 
   test('contains responsive and professional theme rules', () => {
     expect(css).toMatch(/@media \(max-width: 600px\)/);
-    expect(css).toMatch(/body\.theme-professional \.messages-form/);
+    expect(css).toMatch(/body\.theme-professional \.chats-section/);
   });
 });
 

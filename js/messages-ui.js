@@ -1,7 +1,8 @@
 (function() {
-// Foreman Messages UI — DOM controller that renders the message composer and
-// inbox, wiring them to ForemanMessagesAPI. All user-supplied text is rendered
-// with textContent / createTextNode to prevent XSS.
+// Foreman Messages UI — DOM controller that renders the Chats messaging
+// surface (chat list, open thread + reply form) and a new-conversation
+// starter, wiring them to ForemanMessagesAPI. All user-supplied text is
+// rendered with textContent / createTextNode to prevent XSS.
 
 function getAPI() {
   if (typeof window !== 'undefined' && window.ForemanMessagesAPI) {
@@ -51,35 +52,6 @@ function formatDate(iso) {
   var d = new Date(iso);
   if (isNaN(d.getTime())) return 'unknown';
   return d.toLocaleString();
-}
-
-// Module-level builder: (re)fill the inbox list contents. Contains no user
-// inputs, so rebuilding it in place is always safe. Structure/classes are kept
-// byte-identical to the original inline renderInbox loop.
-function fillInboxList(list, messages) {
-  list.innerHTML = '';
-  if (!messages || messages.length === 0) {
-    list.appendChild(el('p', 'messages-empty', 'No messages yet.'));
-    return;
-  }
-  for (var i = 0; i < messages.length; i++) {
-    var msg = messages[i];
-    var item = el('div', 'message-item');
-
-    var meta = el('div', 'message-meta');
-    meta.appendChild(el('span', 'message-from', 'From: '));
-    // username rendered via text node — never innerHTML (XSS-safe)
-    meta.appendChild(document.createTextNode(msg.fromUsername == null ? '' : String(msg.fromUsername)));
-    meta.appendChild(el('span', 'message-time', formatDate(msg.createdAt)));
-
-    var bodyDiv = el('div', 'message-body');
-    // body rendered via text node — never innerHTML (XSS-safe)
-    bodyDiv.appendChild(document.createTextNode(msg.body == null ? '' : String(msg.body)));
-
-    item.appendChild(meta);
-    item.appendChild(bodyDiv);
-    list.appendChild(item);
-  }
 }
 
 // Module-level builder: (re)fill an open chat thread. Only rebuilds the
@@ -144,7 +116,6 @@ function fillChatList(chatList, chats, me, onOpen) {
 function renderMessages(container) {
   if (!container) return;
   var api = getAPI();
-  var chatControls = null;
 
   container.innerHTML = '';
   container.appendChild(el('h2', 'messages-list-title', 'Messages'));
@@ -155,55 +126,30 @@ function renderMessages(container) {
     container.appendChild(el('div', 'messages-empty', 'Sign in on the Profile tab to send and read messages.'));
   }
 
-  function renderInbox() {
-    var prior = container.querySelector('.messages-inbox');
-    if (prior) prior.parentNode.removeChild(prior);
+  function renderChatSection(me) {
+    var wrapper = el('div', 'chats-section');
+    wrapper.appendChild(el('h2', 'chats-title', 'Chats'));
 
-    var inbox = el('div', 'messages-inbox');
-    inbox.appendChild(el('h2', 'messages-inbox-title', 'Inbox'));
-    var list = el('div', 'messages-thread');
-    inbox.appendChild(list);
-    container.appendChild(inbox);
-
-    api.inbox().then(function(messages) {
-      fillInboxList(list, messages);
-    }).catch(function() {
-      list.innerHTML = '';
-      list.appendChild(el('p', 'messages-empty', 'Could not load messages.'));
-    });
-  }
-
-  function renderComposer(me) {
-    var form = el('form', 'messages-form');
-    form.appendChild(el('h2', 'messages-form-title', 'New Message'));
-
-    var select = el('select', 'messages-input');
-    select.name = 'recipient';
-    select.setAttribute('aria-label', 'Recipient');
-    var defaultOption = el('option', null, 'Select a recipient');
-    defaultOption.value = '';
-    defaultOption.disabled = true;
-    defaultOption.selected = true;
-    select.appendChild(defaultOption);
-
-    var bodyEl = el('textarea', 'messages-input messages-body');
-    bodyEl.name = 'body';
-    bodyEl.placeholder = 'Write your message...';
-    bodyEl.setAttribute('aria-label', 'Message body');
-
-    var submit = el('button', 'messages-btn', 'Send');
-    submit.type = 'submit';
-
-    form.appendChild(select);
-    form.appendChild(bodyEl);
-    form.appendChild(submit);
-    container.appendChild(form);
+    // ---- New direct conversation starter (non-sending) ----
+    var newChatForm = el('form', 'new-chat-form');
+    newChatForm.appendChild(el('h2', 'new-chat-title', 'New conversation'));
+    var newChatSelect = el('select', 'new-chat-select');
+    newChatSelect.setAttribute('aria-label', 'Recipient');
+    var ncDefault = el('option', null, 'Select a recipient');
+    ncDefault.value = '';
+    ncDefault.disabled = true;
+    ncDefault.selected = true;
+    newChatSelect.appendChild(ncDefault);
+    var newChatBtn = el('button', 'new-chat-btn', 'Start chat');
+    newChatBtn.type = 'submit';
+    newChatForm.appendChild(newChatSelect);
+    newChatForm.appendChild(newChatBtn);
 
     api.listRecipients().then(function(users) {
       if (!users || users.length === 0) {
-        submit.disabled = true;
-        form.appendChild(el('p', 'messages-empty', 'No other users to message yet.'));
-        showBanner(form, 'error', 'No other users to message yet.');
+        newChatBtn.disabled = true;
+        newChatForm.appendChild(el('p', 'messages-empty', 'No other users to message yet.'));
+        showBanner(newChatForm, 'error', 'No other users to message yet.');
         return;
       }
       for (var i = 0; i < users.length; i++) {
@@ -212,46 +158,31 @@ function renderMessages(container) {
         opt.value = user.id;
         // username rendered via text node (XSS-safe)
         opt.appendChild(document.createTextNode(user.username == null ? '' : String(user.username)));
-        select.appendChild(opt);
+        newChatSelect.appendChild(opt);
       }
     }).catch(function() {
-      submit.disabled = true;
-      showBanner(form, 'error', 'Could not load recipients.');
+      newChatBtn.disabled = true;
+      showBanner(newChatForm, 'error', 'Could not load recipients.');
     });
 
-    form.addEventListener('submit', function(e) {
+    newChatForm.addEventListener('submit', function(e) {
       e.preventDefault();
-      var toId = select.value;
-      var body = bodyEl.value.trim();
+      var toId = newChatSelect.value;
       if (!toId) {
-        showBanner(form, 'error', 'Please choose a recipient.');
+        showBanner(newChatForm, 'error', 'Please choose a recipient.');
         return;
       }
-      if (!body) {
-        showBanner(form, 'error', 'Message body is required.');
-        return;
-      }
-      var toUsername = select.options[select.selectedIndex] ? select.options[select.selectedIndex].textContent : '';
-      setLoading(form, true);
-      api.send(toId, toUsername, body).then(function(record) {
-        setLoading(form, false);
-        bodyEl.value = '';
-        showBanner(form, 'success', 'Message sent.');
-        renderInbox();
-        if (chatControls) {
-          chatControls.refresh();
-          if (record && record.chatId) chatControls.open(record.chatId);
-        }
+      setLoading(newChatForm, true);
+      api.openDirectChat(toId).then(function(chat) {
+        setLoading(newChatForm, false);
+        showBanner(newChatForm, 'success', 'Conversation ready.');
+        refreshChatList();
+        openActiveChat(chat.id);
       }).catch(function(err) {
-        setLoading(form, false);
-        showBanner(form, 'error', err.message);
+        setLoading(newChatForm, false);
+        showBanner(newChatForm, 'error', err.message);
       });
     });
-  }
-
-  function renderChatSection(me) {
-    var wrapper = el('div', 'chats-section');
-    wrapper.appendChild(el('h2', 'chats-title', 'Chats'));
 
     // ---- Group create form ----
     var groupForm = el('form', 'chat-group-form');
@@ -360,12 +291,12 @@ function renderMessages(container) {
       });
     }
 
+    wrapper.appendChild(newChatForm);
     wrapper.appendChild(groupForm);
     wrapper.appendChild(chatList);
     wrapper.appendChild(activePane);
     container.appendChild(wrapper);
 
-    chatControls = { refresh: refreshChatList, open: openActiveChat };
     // Expose the open handler on the container so the non-destructive poll
     // refresh (updateInbox) can rebuild the chat list with working click
     // handlers without re-rendering the whole section.
@@ -378,44 +309,34 @@ function renderMessages(container) {
       renderSignedOut();
       return;
     }
-    renderComposer(me);
-    renderInbox();
     renderChatSection(me);
   }).catch(renderSignedOut);
 }
 
-// Non-destructive poll refresh: re-fetches data and rebuilds ONLY the inbox
-// list, the open chat thread, and the chat list (buttons/previews) in place.
-// It deliberately never touches the composer <select>/.messages-body textarea,
-// the group form, or the open .chat-reply-input textarea — preserving any
-// in-progress typed text and avoiding scroll jumps on each 4s poll.
+// Non-destructive poll refresh: re-fetches data and rebuilds ONLY the open chat
+// thread and the chat list (buttons/previews) in place. It deliberately never
+// touches the new-chat <select>, the group form, or the open .chat-reply-input
+// textarea — preserving any in-progress typed text and avoiding scroll jumps on
+// each poll.
 function updateInbox(container) {
   if (!container) return;                       // null-safe (mirrors renderMessages)
   var api = getAPI();
   if (!api) return;
-  var list = container.querySelector('.messages-inbox .messages-thread');
+  var chatList = container.querySelector('.chat-list');
   // If the panel isn't in a signed-in rendered state yet, fall back to a full render.
-  if (!list) { renderMessages(container); return; }
+  if (!chatList) { renderMessages(container); return; }
   api.getCurrentUser().then(function(me) {
     if (!me) { renderMessages(container); return; } // signed out → show prompt
-    // 1) Inbox list (no inputs here) — rebuild contents only.
-    api.inbox().then(function(messages) {
-      fillInboxList(list, messages);
-    }).catch(function() {
-      list.innerHTML = '';
-      list.appendChild(el('p', 'messages-empty', 'Could not load messages.'));
-    });
-    // 2) Chat list (buttons/previews only) — rebuild in place so new chats /
+    // 1) Chat list (buttons/previews only) — rebuild in place so new chats /
     //    updated last-message previews surface live. Reuses the open handler
     //    captured at full-render time so clicks still open the active pane.
-    var chatList = container.querySelector('.chat-list');
     var controls = container.__foremanChatControls;
-    if (chatList && controls && typeof controls.open === 'function') {
+    if (controls && typeof controls.open === 'function') {
       api.listChats().then(function(chats) {
         fillChatList(chatList, chats, me, controls.open);
       }).catch(function() {});
     }
-    // 3) Open chat thread (if any) — rebuild ONLY .chat-thread, leaving the
+    // 2) Open chat thread (if any) — rebuild ONLY .chat-thread, leaving the
     //    reply textarea (and its in-progress draft) fully intact.
     var active = container.querySelector('.chat-active');
     if (active && active.dataset && active.dataset.chatId) {

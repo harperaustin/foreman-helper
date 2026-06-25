@@ -1082,11 +1082,6 @@ body.theme-professional .harness-subtitle {
   #messages-container {
     margin: 1rem auto;
   }
-  .messages-form,
-  .messages-inbox {
-    padding: 1rem;
-    box-shadow: 4px 4px 0 var(--accent);
-  }
   .chats-section {
     margin: 1rem auto;
     padding: 1rem;
@@ -1445,72 +1440,12 @@ body.theme-professional .profile-avatar {
 }
 
 /* ===== Messages ===== */
-.messages-form,
-.messages-inbox {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 480px;
-  margin: 2rem auto;
-  padding: 1.5rem;
-  background: var(--surface);
-  border: 4px solid var(--accent);
-  box-shadow: 6px 6px 0 var(--accent);
-}
-
-.messages-form-title,
-.messages-inbox-title,
 .messages-list-title {
   font-family: 'Press Start 2P', cursive;
   font-size: 1rem;
   color: var(--accent);
   text-align: center;
   margin: 0;
-}
-
-.messages-input {
-  font-family: 'VT323', monospace;
-  font-size: 1.1rem;
-  padding: 0.6rem;
-  background: var(--bg);
-  color: var(--text);
-  border: 2px solid var(--accent);
-}
-
-.messages-input:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--accent);
-}
-
-.messages-body {
-  min-height: 100px;
-  resize: vertical;
-}
-
-.messages-btn {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 0.75rem;
-  padding: 0.75rem 1rem;
-  color: var(--bg);
-  background: var(--accent);
-  border: none;
-  cursor: pointer;
-  transition: transform 0.1s ease;
-}
-
-.messages-btn:hover:not(:disabled) {
-  transform: translate(-2px, -2px);
-}
-
-.messages-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.messages-thread {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
 }
 
 .message-item {
@@ -1525,10 +1460,6 @@ body.theme-professional .profile-avatar {
   align-items: center;
   gap: 0.5rem;
   font-family: 'VT323', monospace;
-  color: var(--text-muted);
-}
-
-.message-from {
   color: var(--text-muted);
 }
 
@@ -1551,23 +1482,6 @@ body.theme-professional .profile-avatar {
 }
 
 /* Messages — Professional theme overrides */
-body.theme-professional .messages-form,
-body.theme-professional .messages-inbox {
-  border: 1px solid #333;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  background: var(--surface);
-}
-body.theme-professional .messages-form-title,
-body.theme-professional .messages-inbox-title {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  color: var(--text);
-}
-body.theme-professional .messages-input,
-body.theme-professional .messages-btn {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  border-radius: 6px;
-}
 
 /* ===== Chats ===== */
 .chats-section {
@@ -1589,6 +1503,44 @@ body.theme-professional .messages-btn {
   color: var(--accent);
   text-align: center;
   margin: 0;
+}
+
+.new-chat-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.new-chat-title {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.9rem;
+  color: var(--accent);
+  margin: 0;
+}
+
+.new-chat-select {
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  padding: 0.6rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 2px solid var(--accent);
+}
+
+.new-chat-btn {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.75rem;
+  padding: 0.6rem 1rem;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+
+.new-chat-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .chat-group-form {
@@ -1719,6 +1671,12 @@ body.theme-professional .chats-section {
 }
 body.theme-professional .chat-list-item,
 body.theme-professional .chat-reply-form {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  border-radius: 6px;
+}
+body.theme-professional .new-chat-form,
+body.theme-professional .new-chat-select,
+body.theme-professional .new-chat-btn {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   border-radius: 6px;
 }
