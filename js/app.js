@@ -841,6 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let bugSquashInitialized = false;
   let harnessInitialized = false;
   let snakeInitialized = false;
+  let sandInitialized = false;
 
   // --- Message notifications ---
   const MessagesAPIForNotify = (typeof window !== 'undefined' && window.ForemanMessagesAPI);
@@ -973,6 +974,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (BugSquash) BugSquash.stopAnim();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
+        const Sand = (typeof window !== 'undefined' && window.ForemanSandGame);
+        if (Sand) Sand.stopSand();
       } else if (targetTab === 'snake') {
         if (demoActive) stopDemo();
         const snakeCanvas = document.getElementById('snake-canvas');
@@ -986,6 +989,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Game) Game.stopGame();
         const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
         if (BugSquash) BugSquash.stopAnim();
+        const Sand = (typeof window !== 'undefined' && window.ForemanSandGame);
+        if (Sand) Sand.stopSand();
       } else if (targetTab === 'bug-squash') {
         if (demoActive) stopDemo();
         const canvas = document.getElementById('bug-squash-canvas');
@@ -1002,6 +1007,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Game) Game.stopGame();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
+        const Sand = (typeof window !== 'undefined' && window.ForemanSandGame);
+        if (Sand) Sand.stopSand();
+      } else if (targetTab === 'sand') {
+        if (demoActive) stopDemo();
+        const sandCanvas = document.getElementById('sand-canvas');
+        const Sand = (typeof window !== 'undefined' && window.ForemanSandGame);
+        if (Sand && sandCanvas && !sandInitialized) {
+          Sand.initSand(sandCanvas);
+          sandInitialized = true;
+        }
+        if (Sand) Sand.startSand();
+        const Game = (typeof window !== 'undefined' && window.ForemanGame);
+        if (Game) Game.stopGame();
+        const BugSquash = (typeof window !== 'undefined' && window.BugSquashAnim);
+        if (BugSquash) BugSquash.stopAnim();
+        const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
+        if (Snake) Snake.stopSnake();
       } else if (targetTab === 'harness') {
         if (demoActive) stopDemo();
         const Harness = (typeof window !== 'undefined' && window.ForemanHarness);
@@ -1016,6 +1038,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (BugSquash) BugSquash.stopAnim();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
+        const Sand = (typeof window !== 'undefined' && window.ForemanSandGame);
+        if (Sand) Sand.stopSand();
       } else if (targetTab === 'profile') {
         if (demoActive) stopDemo();
         const Game = (typeof window !== 'undefined' && window.ForemanGame);
@@ -1024,6 +1048,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (BugSquash) BugSquash.stopAnim();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
+        const Sand = (typeof window !== 'undefined' && window.ForemanSandGame);
+        if (Sand) Sand.stopSand();
         const ProfileUI = (typeof window !== 'undefined' && window.ForemanProfileUI);
         const profileContainer = document.getElementById('profile-container');
         if (ProfileUI && profileContainer) {
@@ -1037,6 +1063,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (BugSquash) BugSquash.stopAnim();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
+        const Sand = (typeof window !== 'undefined' && window.ForemanSandGame);
+        if (Sand) Sand.stopSand();
         const ProfileUI = (typeof window !== 'undefined' && window.ForemanProfileUI);
         const usersContainer = document.getElementById('users-container');
         if (ProfileUI && usersContainer && typeof ProfileUI.renderUsers === 'function') {
@@ -1050,6 +1078,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (BugSquash) BugSquash.stopAnim();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
+        const Sand = (typeof window !== 'undefined' && window.ForemanSandGame);
+        if (Sand) Sand.stopSand();
         refreshMessagesInbox();
         // Opening Messages marks everything seen: hide the toast and advance the baseline.
         if (Notify) Notify.hide();
@@ -1065,6 +1095,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (BugSquash) BugSquash.stopAnim();
         const Snake = (typeof window !== 'undefined' && window.ForemanSnake);
         if (Snake) Snake.stopSnake();
+        const Sand = (typeof window !== 'undefined' && window.ForemanSandGame);
+        if (Sand) Sand.stopSand();
       }
     });
   });
@@ -1093,6 +1125,48 @@ document.addEventListener('DOMContentLoaded', () => {
   if (snakeCanvas && window.ForemanSnake) {
     window.ForemanSnake.initSnake(snakeCanvas);
     snakeInitialized = true;
+  }
+
+  // Sand clear button
+  var sandClearBtn = document.getElementById('sand-clear-btn');
+  if (sandClearBtn) {
+    sandClearBtn.addEventListener('click', function() {
+      if (window.ForemanSandGame) window.ForemanSandGame.clearGrid();
+    });
+  }
+
+  // Sand element picker buttons
+  var sandToolbar = document.getElementById('sand-toolbar');
+  if (sandToolbar) {
+    sandToolbar.querySelectorAll('.sand-element-btn').forEach(function(b) {
+      b.addEventListener('click', function() {
+        sandToolbar.querySelectorAll('.sand-element-btn').forEach(function(o) {
+          o.classList.toggle('active', o === b);
+          o.setAttribute('aria-pressed', o === b ? 'true' : 'false');
+        });
+        if (window.ForemanSandGame) {
+          window.ForemanSandGame.setElement(window.ForemanSandGame.ELEMENTS[b.dataset.element.toUpperCase()]);
+        }
+      });
+    });
+  }
+
+  // Sand canvas painting (pointer down + drag)
+  var sandCanvasEl = document.getElementById('sand-canvas');
+  if (sandCanvasEl) {
+    var painting = false;
+    var paintAt = function(e) {
+      if (!window.ForemanSandGame) return;
+      var rect = sandCanvasEl.getBoundingClientRect();
+      var scaleX = sandCanvasEl.width / rect.width;
+      var scaleY = sandCanvasEl.height / rect.height;
+      var col = Math.floor((e.clientX - rect.left) * scaleX / window.ForemanSandGame.CELL_SIZE);
+      var row = Math.floor((e.clientY - rect.top) * scaleY / window.ForemanSandGame.CELL_SIZE);
+      window.ForemanSandGame.paintCell(col, row);
+    };
+    sandCanvasEl.addEventListener('mousedown', function(e) { painting = true; paintAt(e); });
+    sandCanvasEl.addEventListener('mousemove', function(e) { if (painting) paintAt(e); });
+    document.addEventListener('mouseup', function() { painting = false; });
   }
 
   // Arrow key handling for game
