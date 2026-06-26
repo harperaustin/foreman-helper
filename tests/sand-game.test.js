@@ -389,6 +389,16 @@ describe('lava behavior', () => {
     Sand.tick();
     expect(Sand.getCell(col + 1, r)).toBe(Sand.ELEMENTS.FIRE);
   });
+
+  test('lava falls straight down one row per tick into empty space', () => {
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const col = 20;
+    grid[0 * Sand.COLS + col] = Sand.ELEMENTS.LAVA;
+    Sand.tick();
+    expect(Sand.getCell(col, 0)).toBe(Sand.ELEMENTS.EMPTY);
+    expect(Sand.getCell(col, 1)).toBe(Sand.ELEMENTS.LAVA);
+  });
 });
 
 describe('explosive behavior', () => {

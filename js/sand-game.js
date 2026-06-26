@@ -246,9 +246,29 @@ function tickLava(col, row) {
       markProcessed(nc, nr);
     }
   }
-  // Lava flows like a slow liquid (every 2nd frame).
+  // Gravity always applies: if the cell directly below is empty, lava falls
+  // straight down one row every tick (deterministic, like water/sand).
+  if (getCell(col, row + 1) === ELEMENTS.EMPTY) {
+    setCell(col, row, ELEMENTS.EMPTY);
+    setCell(col, row + 1, ELEMENTS.LAVA);
+    markProcessed(col, row + 1);
+    return true;
+  }
+  // Lava is a slow liquid: its sideways/diagonal spread only happens every
+  // 2nd frame (the slowness applies to spreading, never to straight-down fall).
   if (state.frameCount % 2 === 0) {
-    return tickLiquid(col, row, ELEMENTS.LAVA);
+    if (trySwapDown(col, row)) return true;
+    var first = Math.random() < 0.5 ? -1 : 1;
+    var dirs = [first, -first];
+    for (var j = 0; j < dirs.length; j++) {
+      var dc = dirs[j];
+      if (inBounds(col + dc, row) && getCell(col + dc, row) === ELEMENTS.EMPTY) {
+        setCell(col, row, ELEMENTS.EMPTY);
+        setCell(col + dc, row, ELEMENTS.LAVA);
+        markProcessed(col + dc, row);
+        return true;
+      }
+    }
   }
   return false;
 }
