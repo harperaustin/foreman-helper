@@ -1328,6 +1328,33 @@ body.theme-professional .message-notification {
   color: #111;
 }
 
+#flock-canvas {
+  display: block;
+  margin: 0 auto;
+  background: #0d1b2a;
+  border: 3px solid var(--accent);
+  max-width: 100%;
+  cursor: crosshair;
+}
+
+.flock-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.flock-control {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.6rem;
+  color: var(--accent);
+}
+
 .snake-leaderboard {
   max-width: 480px;
   margin: 1.5rem auto;
