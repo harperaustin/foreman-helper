@@ -132,12 +132,18 @@
     </div>
     <div id="panel-sand" class="tab-panel" role="tabpanel" aria-labelledby="tab-sand">
       <h2 class="game-title">Falling Sandbox 🏖️</h2>
-      <p class="game-instructions">Pick an element and click/drag on the grid to paint. Watch sand fall fast, dirt drift slowly, water spread, and stone hold firm.</p>
+      <p class="game-instructions">Pick an element and click/drag on the grid to paint. Sand, dirt, and gravel fall and sink through water; lava flows and hardens to stone on contact with water; explosives blast and chain-react near fire or lava; little people walk, climb, and drown or burn; wood catches fire; and fire rises then burns out.</p>
       <div class="sand-toolbar" id="sand-toolbar" role="group" aria-label="Element picker">
         <button class="sand-element-btn active" data-element="sand" aria-pressed="true">Sand</button>
         <button class="sand-element-btn" data-element="dirt" aria-pressed="false">Dirt</button>
         <button class="sand-element-btn" data-element="stone" aria-pressed="false">Stone</button>
         <button class="sand-element-btn" data-element="water" aria-pressed="false">Water</button>
+        <button class="sand-element-btn" data-element="gravel" aria-pressed="false">Gravel</button>
+        <button class="sand-element-btn" data-element="lava" aria-pressed="false">Lava</button>
+        <button class="sand-element-btn" data-element="explosives" aria-pressed="false">Explosives</button>
+        <button class="sand-element-btn" data-element="people" aria-pressed="false">People</button>
+        <button class="sand-element-btn" data-element="wood" aria-pressed="false">Wood</button>
+        <button class="sand-element-btn" data-element="fire" aria-pressed="false">Fire</button>
         <button class="sand-element-btn" data-element="empty" aria-pressed="false">Eraser</button>
       </div>
       <canvas id="sand-canvas" width="480" height="396"></canvas>

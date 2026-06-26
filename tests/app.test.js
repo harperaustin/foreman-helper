@@ -808,13 +808,16 @@ describe('sand tab DOM presence', () => {
    expect(canvas).not.toBeNull();
   });
 
-  test('sand toolbar has 5 element buttons with expected data-element values', () => {
+  test('sand toolbar has 11 element buttons with expected data-element values', () => {
    const toolbar = document.getElementById('sand-toolbar');
    expect(toolbar).not.toBeNull();
    const btns = toolbar.querySelectorAll('.sand-element-btn');
-   expect(btns.length).toBe(5);
+   expect(btns.length).toBe(11);
    const elements = Array.prototype.map.call(btns, (b) => b.dataset.element);
-   expect(elements).toEqual(['sand', 'dirt', 'stone', 'water', 'empty']);
+   expect(elements).toEqual([
+     'sand', 'dirt', 'stone', 'water', 'gravel', 'lava',
+     'explosives', 'people', 'wood', 'fire', 'empty'
+   ]);
   });
 
   test('sand-game script is referenced before app.js', () => {
