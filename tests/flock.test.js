@@ -359,6 +359,107 @@ describe('setPredator / clearPredator', () => {
   });
 });
 
+function minPairwiseDistance(boids) {
+  let min = Infinity;
+  for (let i = 0; i < boids.length; i++) {
+    for (let k = i + 1; k < boids.length; k++) {
+      const dx = boids[i].x - boids[k].x;
+      const dy = boids[i].y - boids[k].y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < min) min = d;
+    }
+  }
+  return min;
+}
+
+describe('no overlap', () => {
+  test('spawns boids at least MIN_DISTANCE apart', () => {
+    const boids = Flock.getFlockState().boids;
+    expect(minPairwiseDistance(boids)).toBeGreaterThanOrEqual(Flock.MIN_DISTANCE - 1);
+  });
+
+  test('resolveCollisions separates two overlapping boids', () => {
+    Flock.setBoidCount(Flock.MIN_COUNT);
+    const boids = Flock.getFlockState().boids;
+    boids[0].x = 100; boids[0].y = 100;
+    boids[1].x = 100; boids[1].y = 100;
+    Flock.resolveCollisions();
+    const dx = boids[0].x - boids[1].x;
+    const dy = boids[0].y - boids[1].y;
+    expect(Math.sqrt(dx * dx + dy * dy)).toBeGreaterThanOrEqual(Flock.MIN_DISTANCE * 0.9);
+  });
+
+  test('no pair overlaps after a tick', () => {
+    Flock.setBoidCount(Flock.MIN_COUNT);
+    for (let i = 0; i < 5; i++) Flock.tick();
+    const boids = Flock.getFlockState().boids;
+    expect(minPairwiseDistance(boids)).toBeGreaterThanOrEqual(Flock.MIN_DISTANCE * 0.9);
+  });
+
+  test('boids stay in bounds after collision resolution', () => {
+    Flock.setBoidCount(Flock.MIN_COUNT);
+    const state = Flock.getFlockState();
+    state.boids[0].x = state.width - 1; state.boids[0].y = state.height - 1;
+    state.boids[1].x = state.width - 1; state.boids[1].y = state.height - 1;
+    Flock.resolveCollisions();
+    state.boids.forEach((b) => {
+      expect(b.x).toBeGreaterThanOrEqual(0);
+      expect(b.x).toBeLessThan(state.width);
+      expect(b.y).toBeGreaterThanOrEqual(0);
+      expect(b.y).toBeLessThan(state.height);
+    });
+  });
+});
+
+describe('addBoids', () => {
+  test('appends the requested number of boids', () => {
+    Flock.setBoidCount(20);
+    Flock.addBoids(10);
+    const state = Flock.getFlockState();
+    expect(state.count).toBe(30);
+    expect(state.boids.length).toBe(30);
+  });
+
+  test('does not exceed MAX_COUNT', () => {
+    Flock.setBoidCount(Flock.MAX_COUNT);
+    Flock.addBoids(50);
+    expect(Flock.getFlockState().count).toBe(Flock.MAX_COUNT);
+  });
+
+  test('preserves existing boids when appending', () => {
+    Flock.setBoidCount(20);
+    const first = Flock.getFlockState().boids[0];
+    const x = first.x, y = first.y;
+    Flock.addBoids(5);
+    const state = Flock.getFlockState();
+    expect(state.boids.length).toBe(25);
+    expect(state.boids[0].x).toBe(x);
+    expect(state.boids[0].y).toBe(y);
+  });
+
+  test('invalid/zero input adds a default positive number, never throws', () => {
+    Flock.setBoidCount(20);
+    expect(() => Flock.addBoids('abc')).not.toThrow();
+    let count = Flock.getFlockState().count;
+    expect(count).toBeGreaterThan(20);
+    expect(count).toBeLessThanOrEqual(Flock.MAX_COUNT);
+    Flock.addBoids(0);
+    expect(Flock.getFlockState().count).toBeGreaterThan(count);
+  });
+
+  test('appended boids are within bounds', () => {
+    Flock.setBoidCount(20);
+    Flock.addBoids(10);
+    const state = Flock.getFlockState();
+    state.boids.forEach((b) => {
+      expect(b.x).toBeGreaterThanOrEqual(0);
+      expect(b.x).toBeLessThan(state.width);
+      expect(b.y).toBeGreaterThanOrEqual(0);
+      expect(b.y).toBeLessThan(state.height);
+    });
+  });
+});
+
 describe('index.html markup', () => {
   beforeEach(() => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
@@ -393,5 +494,9 @@ describe('index.html markup', () => {
     expect(document.getElementById('flock-count')).not.toBeNull();
     expect(document.getElementById('flock-speed')).not.toBeNull();
     expect(document.getElementById('flock-reset-btn')).not.toBeNull();
+  });
+
+  test('Flock has an Add Boids button', () => {
+    expect(document.getElementById('flock-add-btn')).not.toBeNull();
   });
 });
