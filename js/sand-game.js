@@ -8,7 +8,10 @@ var COLS = 40;
 var ROWS = 33;
 var TICK_RATE_MS = 33; // ~30fps
 
-var ELEMENTS = { EMPTY: 0, SAND: 1, DIRT: 2, STONE: 3, WATER: 4 };
+var ELEMENTS = {
+  EMPTY: 0, SAND: 1, DIRT: 2, STONE: 3, WATER: 4,
+  GRAVEL: 5, EXPLOSIVE: 6, LAVA: 7, FIRE: 8, WOOD: 9, PERSON: 10
+};
 
 var ELEMENT_COLORS = {};
 ELEMENT_COLORS[ELEMENTS.EMPTY] = '#111';
@@ -16,10 +19,41 @@ ELEMENT_COLORS[ELEMENTS.SAND] = '#e3c768';
 ELEMENT_COLORS[ELEMENTS.DIRT] = '#8a5a2b';
 ELEMENT_COLORS[ELEMENTS.STONE] = '#888c94';
 ELEMENT_COLORS[ELEMENTS.WATER] = '#3a7bd5';
+ELEMENT_COLORS[ELEMENTS.GRAVEL] = '#6f7479';
+ELEMENT_COLORS[ELEMENTS.EXPLOSIVE] = '#c0392b';
+ELEMENT_COLORS[ELEMENTS.LAVA] = '#ff5722';
+ELEMENT_COLORS[ELEMENTS.FIRE] = '#ff9b21';
+ELEMENT_COLORS[ELEMENTS.WOOD] = '#7a4a1e';
+ELEMENT_COLORS[ELEMENTS.PERSON] = '#f2d6b3';
 
 var ELEMENT_VALUES = [
-  ELEMENTS.EMPTY, ELEMENTS.SAND, ELEMENTS.DIRT, ELEMENTS.STONE, ELEMENTS.WATER
+  ELEMENTS.EMPTY, ELEMENTS.SAND, ELEMENTS.DIRT, ELEMENTS.STONE, ELEMENTS.WATER,
+  ELEMENTS.GRAVEL, ELEMENTS.EXPLOSIVE, ELEMENTS.LAVA, ELEMENTS.FIRE,
+  ELEMENTS.WOOD, ELEMENTS.PERSON
 ];
+
+// Density drives sinking: a heavier solid swaps places with a lighter liquid
+// below it (so sand/dirt/gravel sink through water and water rises, conserved).
+var ELEMENT_DENSITY = {};
+ELEMENT_DENSITY[ELEMENTS.EMPTY] = 0;
+ELEMENT_DENSITY[ELEMENTS.FIRE] = 0;
+ELEMENT_DENSITY[ELEMENTS.WATER] = 2;
+ELEMENT_DENSITY[ELEMENTS.LAVA] = 3;
+ELEMENT_DENSITY[ELEMENTS.PERSON] = 4;
+ELEMENT_DENSITY[ELEMENTS.DIRT] = 6;
+ELEMENT_DENSITY[ELEMENTS.SAND] = 6;
+ELEMENT_DENSITY[ELEMENTS.EXPLOSIVE] = 6;
+ELEMENT_DENSITY[ELEMENTS.GRAVEL] = 7;
+ELEMENT_DENSITY[ELEMENTS.WOOD] = 99;
+ELEMENT_DENSITY[ELEMENTS.STONE] = 99;
+
+function isLiquid(v) {
+  return v === ELEMENTS.WATER || v === ELEMENTS.LAVA;
+}
+
+function density(v) {
+  return ELEMENT_DENSITY[v] || 0;
+}
 
 var canvas = null;
 var ctx = null;
@@ -123,10 +157,19 @@ function clearGrid() {
 function trySwapDown(col, row) {
   // Returns true if the particle moved.
   var val = getCell(col, row);
-  if (getCell(col, row + 1) === ELEMENTS.EMPTY) {
+  var below = getCell(col, row + 1);
+  if (below === ELEMENTS.EMPTY) {
     setCell(col, row, ELEMENTS.EMPTY);
     setCell(col, row + 1, val);
     markProcessed(col, row + 1);
+    return true;
+  }
+  // Sink through a lighter liquid: swap so the liquid rises (conserved).
+  if (isLiquid(below) && density(val) > density(below)) {
+    setCell(col, row + 1, val);
+    setCell(col, row, below);
+    markProcessed(col, row + 1);
+    markProcessed(col, row);
     return true;
   }
   // diagonal fall, randomized order
@@ -134,20 +177,29 @@ function trySwapDown(col, row) {
   var dirs = [first, -first];
   for (var i = 0; i < dirs.length; i++) {
     var dc = dirs[i];
-    if (inBounds(col + dc, row + 1) && getCell(col + dc, row + 1) === ELEMENTS.EMPTY) {
+    if (!inBounds(col + dc, row + 1)) continue;
+    var diag = getCell(col + dc, row + 1);
+    if (diag === ELEMENTS.EMPTY) {
       setCell(col, row, ELEMENTS.EMPTY);
       setCell(col + dc, row + 1, val);
       markProcessed(col + dc, row + 1);
+      return true;
+    }
+    if (isLiquid(diag) && density(val) > density(diag)) {
+      setCell(col + dc, row + 1, val);
+      setCell(col, row, diag);
+      markProcessed(col + dc, row + 1);
+      markProcessed(col, row);
       return true;
     }
   }
   return false;
 }
 
-function tickWater(col, row) {
+function tickLiquid(col, row, type) {
   if (getCell(col, row + 1) === ELEMENTS.EMPTY) {
     setCell(col, row, ELEMENTS.EMPTY);
-    setCell(col, row + 1, ELEMENTS.WATER);
+    setCell(col, row + 1, type);
     markProcessed(col, row + 1);
     return true;
   }
@@ -160,7 +212,159 @@ function tickWater(col, row) {
     var dc = dirs[i];
     if (inBounds(col + dc, row) && getCell(col + dc, row) === ELEMENTS.EMPTY) {
       setCell(col, row, ELEMENTS.EMPTY);
-      setCell(col + dc, row, ELEMENTS.WATER);
+      setCell(col + dc, row, type);
+      markProcessed(col + dc, row);
+      return true;
+    }
+  }
+  return false;
+}
+
+function tickWater(col, row) {
+  return tickLiquid(col, row, ELEMENTS.WATER);
+}
+
+var NEIGHBORS_4 = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+
+function tickLava(col, row) {
+  // Reaction first: contact with water solidifies lava into stone (obsidian);
+  // contact with flammable cells ignites them.
+  for (var i = 0; i < NEIGHBORS_4.length; i++) {
+    var nc = col + NEIGHBORS_4[i][0];
+    var nr = row + NEIGHBORS_4[i][1];
+    if (!inBounds(nc, nr)) continue;
+    var n = getCell(nc, nr);
+    if (n === ELEMENTS.WATER) {
+      setCell(col, row, ELEMENTS.STONE);
+      setCell(nc, nr, ELEMENTS.STONE);
+      markProcessed(col, row);
+      markProcessed(nc, nr);
+      return true;
+    }
+    if (n === ELEMENTS.WOOD || n === ELEMENTS.EXPLOSIVE) {
+      setCell(nc, nr, ELEMENTS.FIRE);
+      markProcessed(nc, nr);
+    }
+  }
+  // Lava flows like a slow liquid (every 2nd frame).
+  if (state.frameCount % 2 === 0) {
+    return tickLiquid(col, row, ELEMENTS.LAVA);
+  }
+  return false;
+}
+
+function detonate(col, row) {
+  // Clear a 5x5 (Chebyshev radius 2) region, leaving fire at the core to drive
+  // chain reactions.
+  for (var dr = -2; dr <= 2; dr++) {
+    for (var dc = -2; dc <= 2; dc++) {
+      var nc = col + dc;
+      var nr = row + dr;
+      if (!inBounds(nc, nr)) continue;
+      setCell(nc, nr, ELEMENTS.EMPTY);
+      markProcessed(nc, nr);
+    }
+  }
+  setCell(col, row, ELEMENTS.FIRE);
+  markProcessed(col, row);
+  for (var i = 0; i < NEIGHBORS_4.length; i++) {
+    var fc = col + NEIGHBORS_4[i][0];
+    var fr = row + NEIGHBORS_4[i][1];
+    if (!inBounds(fc, fr)) continue;
+    setCell(fc, fr, ELEMENTS.FIRE);
+    markProcessed(fc, fr);
+  }
+}
+
+function tickExplosive(col, row) {
+  for (var i = 0; i < NEIGHBORS_4.length; i++) {
+    var nc = col + NEIGHBORS_4[i][0];
+    var nr = row + NEIGHBORS_4[i][1];
+    if (!inBounds(nc, nr)) continue;
+    var n = getCell(nc, nr);
+    if (n === ELEMENTS.FIRE || n === ELEMENTS.LAVA) {
+      detonate(col, row);
+      return true;
+    }
+  }
+  // Otherwise fall like a heavy powder.
+  return trySwapDown(col, row);
+}
+
+function tickFire(col, row) {
+  // Spread to flammable wood neighbours.
+  for (var i = 0; i < NEIGHBORS_4.length; i++) {
+    var nc = col + NEIGHBORS_4[i][0];
+    var nr = row + NEIGHBORS_4[i][1];
+    if (!inBounds(nc, nr)) continue;
+    if (getCell(nc, nr) === ELEMENTS.WOOD) {
+      setCell(nc, nr, ELEMENTS.FIRE);
+      markProcessed(nc, nr);
+    }
+  }
+  // Dissipate over time so fire is finite.
+  if (Math.random() < 0.25) {
+    setCell(col, row, ELEMENTS.EMPTY);
+    markProcessed(col, row);
+    return true;
+  }
+  // Rise: fire drifts upward into empty space.
+  if (getCell(col, row - 1) === ELEMENTS.EMPTY) {
+    setCell(col, row, ELEMENTS.EMPTY);
+    setCell(col, row - 1, ELEMENTS.FIRE);
+    markProcessed(col, row - 1);
+    return true;
+  }
+  return false;
+}
+
+function tickWood(col, row) {
+  // Static, but ignites on contact with fire or lava.
+  for (var i = 0; i < NEIGHBORS_4.length; i++) {
+    var nc = col + NEIGHBORS_4[i][0];
+    var nr = row + NEIGHBORS_4[i][1];
+    if (!inBounds(nc, nr)) continue;
+    var n = getCell(nc, nr);
+    if (n === ELEMENTS.FIRE || n === ELEMENTS.LAVA) {
+      setCell(col, row, ELEMENTS.FIRE);
+      markProcessed(col, row);
+      return true;
+    }
+  }
+  return false;
+}
+
+function tickPerson(col, row) {
+  // Death: hazards destroy people on contact.
+  for (var i = 0; i < NEIGHBORS_4.length; i++) {
+    var nc = col + NEIGHBORS_4[i][0];
+    var nr = row + NEIGHBORS_4[i][1];
+    if (!inBounds(nc, nr)) continue;
+    var n = getCell(nc, nr);
+    if (n === ELEMENTS.FIRE || n === ELEMENTS.LAVA) {
+      setCell(col, row, ELEMENTS.EMPTY);
+      markProcessed(col, row);
+      return true;
+    }
+  }
+  // Gravity: fall into empty space below.
+  if (getCell(col, row + 1) === ELEMENTS.EMPTY) {
+    setCell(col, row, ELEMENTS.EMPTY);
+    setCell(col, row + 1, ELEMENTS.PERSON);
+    markProcessed(col, row + 1);
+    return true;
+  }
+  // Wander: step sideways onto supported ground.
+  var first = Math.random() < 0.5 ? -1 : 1;
+  var dirs = [first, -first];
+  for (var j = 0; j < dirs.length; j++) {
+    var dc = dirs[j];
+    if (!inBounds(col + dc, row)) continue;
+    if (getCell(col + dc, row) !== ELEMENTS.EMPTY) continue;
+    // Only step where there is support (so people don't levitate off cliffs).
+    if (getCell(col + dc, row + 1) !== ELEMENTS.EMPTY) {
+      setCell(col, row, ELEMENTS.EMPTY);
+      setCell(col + dc, row, ELEMENTS.PERSON);
       markProcessed(col + dc, row);
       return true;
     }
@@ -187,6 +391,18 @@ function tick() {
         if (state.frameCount % 3 === 0) trySwapDown(col, row);
       } else if (val === ELEMENTS.WATER) {
         tickWater(col, row);
+      } else if (val === ELEMENTS.GRAVEL) {
+        trySwapDown(col, row);
+      } else if (val === ELEMENTS.EXPLOSIVE) {
+        tickExplosive(col, row);
+      } else if (val === ELEMENTS.LAVA) {
+        tickLava(col, row);
+      } else if (val === ELEMENTS.FIRE) {
+        tickFire(col, row);
+      } else if (val === ELEMENTS.WOOD) {
+        tickWood(col, row);
+      } else if (val === ELEMENTS.PERSON) {
+        tickPerson(col, row);
       }
     }
   }
