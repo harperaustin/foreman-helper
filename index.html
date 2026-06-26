@@ -90,6 +90,7 @@
         <button class="tab-btn" data-tab="bug-squash" role="tab" aria-selected="false" id="tab-bug-squash" aria-controls="panel-bug-squash">🐛 Bug Squash</button>
         <button class="tab-btn" data-tab="snake" role="tab" aria-selected="false" id="tab-snake" aria-controls="panel-snake">🐍 Snake</button>
         <button class="tab-btn" data-tab="sand" role="tab" aria-selected="false" id="tab-sand" aria-controls="panel-sand">🏖️ Sandbox</button>
+        <button class="tab-btn" data-tab="flock" role="tab" aria-selected="false" id="tab-flock" aria-controls="panel-flock">🐦 Flock</button>
       </div>
     </div>
   </header>
@@ -151,6 +152,22 @@
         <button id="sand-clear-btn" class="demo-btn">🧹 Clear</button>
       </div>
     </div>
+    <div id="panel-flock" class="tab-panel" role="tabpanel" aria-labelledby="tab-flock">
+      <h2 class="game-title">Flock 🐦</h2>
+      <p class="game-instructions">Watch the boids flock — they avoid crowding (separation), match their neighbors' heading (alignment), and drift toward the group center (cohesion). Move your mouse over the canvas to scare them like a predator.</p>
+      <div class="flock-controls" id="flock-controls" role="group" aria-label="Flock controls">
+        <label class="flock-control">Boids
+          <input type="range" id="flock-count" min="10" max="80" step="1" value="50">
+          <span id="flock-count-value">50</span>
+        </label>
+        <label class="flock-control">Speed
+          <input type="range" id="flock-speed" min="0.5" max="6" step="0.5" value="2.5">
+          <span id="flock-speed-value">2.5</span>
+        </label>
+        <button id="flock-reset-btn" class="demo-btn">🔄 Reset</button>
+      </div>
+      <canvas id="flock-canvas" width="480" height="400"></canvas>
+    </div>
     <div id="panel-harness" class="tab-panel" role="tabpanel" aria-labelledby="tab-harness">
       <div id="harness-container"></div>
     </div>
@@ -174,6 +191,7 @@
   <script defer src="js/harness.js"></script>
   <script defer src="js/snake.js"></script>
   <script defer src="js/sand-game.js"></script>
+  <script defer src="js/flock.js"></script>
   <script defer src="js/profile-db.js"></script>
   <script defer src="js/profile-api.js"></script>
   <script defer src="js/profile-ui.js"></script>
