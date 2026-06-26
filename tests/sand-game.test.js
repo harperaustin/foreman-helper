@@ -264,6 +264,301 @@ describe('water physics: at most one move per tick (regression)', () => {
   });
 });
 
+describe('new elements: registry and sanitation', () => {
+  test('new element values are defined', () => {
+    expect(Sand.ELEMENTS.EXPLOSIVES).toBe(5);
+    expect(Sand.ELEMENTS.LAVA).toBe(6);
+    expect(Sand.ELEMENTS.PEOPLE).toBe(7);
+    expect(Sand.ELEMENTS.GRAVEL).toBe(8);
+    expect(Sand.ELEMENTS.FIRE).toBe(9);
+    expect(Sand.ELEMENTS.WOOD).toBe(10);
+  });
+
+  test('new elements are accepted by setElement', () => {
+    Sand.setElement(Sand.ELEMENTS.LAVA);
+    expect(Sand.getSandState().currentElement).toBe(Sand.ELEMENTS.LAVA);
+    Sand.setElement(Sand.ELEMENTS.GRAVEL);
+    expect(Sand.getSandState().currentElement).toBe(Sand.ELEMENTS.GRAVEL);
+  });
+});
+
+describe('sinking physics through water', () => {
+  test('SAND sinks below water', () => {
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const col = 20;
+    // Trap a water cell (solid below and on both sides) so the only way it can
+    // move is by being displaced upward when sand sinks into it.
+    grid[0 * Sand.COLS + col] = Sand.ELEMENTS.SAND;
+    grid[1 * Sand.COLS + col] = Sand.ELEMENTS.WATER;
+    grid[2 * Sand.COLS + col] = Sand.ELEMENTS.STONE;
+    grid[2 * Sand.COLS + (col - 1)] = Sand.ELEMENTS.STONE;
+    grid[2 * Sand.COLS + (col + 1)] = Sand.ELEMENTS.STONE;
+    grid[1 * Sand.COLS + (col - 1)] = Sand.ELEMENTS.STONE;
+    grid[1 * Sand.COLS + (col + 1)] = Sand.ELEMENTS.STONE;
+    Sand.tick();
+    expect(Sand.getCell(col, 1)).toBe(Sand.ELEMENTS.SAND);
+    expect(Sand.getCell(col, 0)).toBe(Sand.ELEMENTS.WATER);
+  });
+
+  test('DIRT sinks below water over time', () => {
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const col = 20;
+    grid[0 * Sand.COLS + col] = Sand.ELEMENTS.DIRT;
+    grid[1 * Sand.COLS + col] = Sand.ELEMENTS.WATER;
+    grid[2 * Sand.COLS + col] = Sand.ELEMENTS.WATER;
+    for (let i = 0; i < 12; i++) Sand.tick();
+    let dirtRow = -1;
+    for (let r = 0; r < Sand.ROWS; r++) {
+      if (Sand.getCell(col, r) === Sand.ELEMENTS.DIRT) dirtRow = r;
+    }
+    expect(dirtRow).toBeGreaterThan(0);
+  });
+});
+
+describe('gravel physics', () => {
+  test('GRAVEL falls one row per tick', () => {
+    Sand.clearGrid();
+    const col = 20;
+    Sand.getSandState().grid[0 * Sand.COLS + col] = Sand.ELEMENTS.GRAVEL;
+    Sand.tick();
+    expect(Sand.getCell(col, 0)).toBe(Sand.ELEMENTS.EMPTY);
+    expect(Sand.getCell(col, 1)).toBe(Sand.ELEMENTS.GRAVEL);
+  });
+
+  test('GRAVEL sinks through water', () => {
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const col = 20;
+    grid[0 * Sand.COLS + col] = Sand.ELEMENTS.GRAVEL;
+    grid[1 * Sand.COLS + col] = Sand.ELEMENTS.WATER;
+    grid[2 * Sand.COLS + col] = Sand.ELEMENTS.STONE;
+    grid[2 * Sand.COLS + (col - 1)] = Sand.ELEMENTS.STONE;
+    grid[2 * Sand.COLS + (col + 1)] = Sand.ELEMENTS.STONE;
+    grid[1 * Sand.COLS + (col - 1)] = Sand.ELEMENTS.STONE;
+    grid[1 * Sand.COLS + (col + 1)] = Sand.ELEMENTS.STONE;
+    Sand.tick();
+    expect(Sand.getCell(col, 1)).toBe(Sand.ELEMENTS.GRAVEL);
+    expect(Sand.getCell(col, 0)).toBe(Sand.ELEMENTS.WATER);
+  });
+});
+
+describe('lava physics', () => {
+  test('LAVA flows downward', () => {
+    Sand.clearGrid();
+    const col = 20;
+    Sand.getSandState().grid[0 * Sand.COLS + col] = Sand.ELEMENTS.LAVA;
+    // Lava moves every 2nd frame; run a couple ticks.
+    for (let i = 0; i < 4; i++) Sand.tick();
+    let lavaRow = -1;
+    for (let r = 0; r < Sand.ROWS; r++) {
+      if (Sand.getCell(col, r) === Sand.ELEMENTS.LAVA) lavaRow = r;
+    }
+    expect(lavaRow).toBeGreaterThan(0);
+  });
+
+  test('LAVA touching water solidifies into STONE', () => {
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const col = 20;
+    const row = 10;
+    grid[row * Sand.COLS + col] = Sand.ELEMENTS.LAVA;
+    grid[row * Sand.COLS + (col + 1)] = Sand.ELEMENTS.WATER;
+    Sand.tick();
+    expect(Sand.getCell(col, row)).toBe(Sand.ELEMENTS.STONE);
+    expect(Sand.getCell(col + 1, row)).toBe(Sand.ELEMENTS.STONE);
+  });
+});
+
+describe('explosives physics', () => {
+  test('EXPLOSIVES fall like sand', () => {
+    Sand.clearGrid();
+    const col = 20;
+    Sand.getSandState().grid[0 * Sand.COLS + col] = Sand.ELEMENTS.EXPLOSIVES;
+    Sand.tick();
+    expect(Sand.getCell(col, 1)).toBe(Sand.ELEMENTS.EXPLOSIVES);
+  });
+
+  test('EXPLOSIVES ignite and blast a radius when touching fire', () => {
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const col = 20;
+    const row = 15;
+    grid[row * Sand.COLS + col] = Sand.ELEMENTS.EXPLOSIVES;
+    grid[row * Sand.COLS + (col + 1)] = Sand.ELEMENTS.FIRE;
+    // Surround with wood to detect blast removal.
+    grid[(row - 2) * Sand.COLS + col] = Sand.ELEMENTS.WOOD;
+    Sand.tick();
+    // The explosive cell must no longer be explosives.
+    expect(Sand.getCell(col, row)).not.toBe(Sand.ELEMENTS.EXPLOSIVES);
+    // Cell within radius cleared (fire or empty), not wood anymore.
+    expect(Sand.getCell(col, row - 2)).not.toBe(Sand.ELEMENTS.WOOD);
+  });
+
+  test('EXPLOSIVES chain react', () => {
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const row = 15;
+    const col = 20;
+    grid[row * Sand.COLS + col] = Sand.ELEMENTS.EXPLOSIVES;
+    grid[row * Sand.COLS + (col + 1)] = Sand.ELEMENTS.EXPLOSIVES;
+    grid[row * Sand.COLS + (col + 2)] = Sand.ELEMENTS.EXPLOSIVES;
+    grid[row * Sand.COLS + (col + 3)] = Sand.ELEMENTS.FIRE;
+    Sand.tick();
+    // All explosives consumed by the chain reaction.
+    expect(Sand.getCell(col, row)).not.toBe(Sand.ELEMENTS.EXPLOSIVES);
+    expect(Sand.getCell(col + 1, row)).not.toBe(Sand.ELEMENTS.EXPLOSIVES);
+    expect(Sand.getCell(col + 2, row)).not.toBe(Sand.ELEMENTS.EXPLOSIVES);
+  });
+});
+
+describe('little people physics', () => {
+  test('PEOPLE fall under gravity', () => {
+    Sand.clearGrid();
+    const col = 20;
+    Sand.getSandState().grid[0 * Sand.COLS + col] = Sand.ELEMENTS.PEOPLE;
+    Sand.tick();
+    expect(Sand.getCell(col, 1)).toBe(Sand.ELEMENTS.PEOPLE);
+  });
+
+  test('PEOPLE sink through water', () => {
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const col = 20;
+    grid[0 * Sand.COLS + col] = Sand.ELEMENTS.PEOPLE;
+    grid[1 * Sand.COLS + col] = Sand.ELEMENTS.WATER;
+    grid[2 * Sand.COLS + col] = Sand.ELEMENTS.STONE;
+    grid[2 * Sand.COLS + (col - 1)] = Sand.ELEMENTS.STONE;
+    grid[2 * Sand.COLS + (col + 1)] = Sand.ELEMENTS.STONE;
+    grid[1 * Sand.COLS + (col - 1)] = Sand.ELEMENTS.STONE;
+    grid[1 * Sand.COLS + (col + 1)] = Sand.ELEMENTS.STONE;
+    Sand.tick();
+    expect(Sand.getCell(col, 1)).toBe(Sand.ELEMENTS.PEOPLE);
+    expect(Sand.getCell(col, 0)).toBe(Sand.ELEMENTS.WATER);
+  });
+
+  test('PEOPLE walk on solid ground', () => {
+    jest.spyOn(global.Math, 'random').mockReturnValue(0.9);
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const floorRow = 10;
+    for (let c = 0; c < Sand.COLS; c++) grid[(floorRow + 1) * Sand.COLS + c] = Sand.ELEMENTS.STONE;
+    const col = 20;
+    grid[floorRow * Sand.COLS + col] = Sand.ELEMENTS.PEOPLE;
+    // frameCount must be a multiple of 4 for walking; run a few ticks.
+    let moved = false;
+    for (let i = 0; i < 8; i++) {
+      Sand.tick();
+      if (Sand.getCell(col, floorRow) !== Sand.ELEMENTS.PEOPLE) { moved = true; break; }
+    }
+    expect(moved).toBe(true);
+    Math.random.mockRestore();
+  });
+
+  test('PEOPLE climb a one-pixel step', () => {
+    jest.spyOn(global.Math, 'random').mockReturnValue(0.9);
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const floorRow = 10;
+    for (let c = 0; c < Sand.COLS; c++) grid[(floorRow + 1) * Sand.COLS + c] = Sand.ELEMENTS.STONE;
+    const col = 20;
+    grid[floorRow * Sand.COLS + col] = Sand.ELEMENTS.PEOPLE;
+    // A one-pixel step to the right.
+    grid[floorRow * Sand.COLS + (col + 1)] = Sand.ELEMENTS.STONE;
+    let climbed = false;
+    for (let i = 0; i < 8; i++) {
+      Sand.tick();
+      if (Sand.getCell(col + 1, floorRow - 1) === Sand.ELEMENTS.PEOPLE) { climbed = true; break; }
+    }
+    expect(climbed).toBe(true);
+    Math.random.mockRestore();
+  });
+
+  test('PEOPLE burn into fire when touching fire', () => {
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const col = 20;
+    const row = 15;
+    grid[row * Sand.COLS + col] = Sand.ELEMENTS.PEOPLE;
+    grid[row * Sand.COLS + (col + 1)] = Sand.ELEMENTS.FIRE;
+    Sand.tick();
+    expect(Sand.getCell(col, row)).toBe(Sand.ELEMENTS.FIRE);
+  });
+});
+
+describe('fire physics', () => {
+  test('FIRE eventually decays away', () => {
+    jest.spyOn(global.Math, 'random').mockReturnValue(0.1);
+    Sand.clearGrid();
+    const col = 20;
+    Sand.getSandState().grid[10 * Sand.COLS + col] = Sand.ELEMENTS.FIRE;
+    Sand.tick();
+    // 0.1 < 0.2 -> burns out.
+    let hasFire = false;
+    for (let r = 0; r < Sand.ROWS; r++) {
+      if (Sand.getCell(col, r) === Sand.ELEMENTS.FIRE) hasFire = true;
+    }
+    expect(hasFire).toBe(false);
+    Math.random.mockRestore();
+  });
+
+  test('FIRE rises upward', () => {
+    jest.spyOn(global.Math, 'random').mockReturnValue(0.9);
+    Sand.clearGrid();
+    const col = 20;
+    const row = 15;
+    Sand.getSandState().grid[row * Sand.COLS + col] = Sand.ELEMENTS.FIRE;
+    Sand.tick();
+    // 0.9 > 0.2 -> survives and rises.
+    expect(Sand.getCell(col, row - 1)).toBe(Sand.ELEMENTS.FIRE);
+    Math.random.mockRestore();
+  });
+});
+
+describe('wood physics', () => {
+  test('WOOD catches fire when touching fire', () => {
+    jest.spyOn(global.Math, 'random').mockReturnValue(0.1);
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const col = 20;
+    const row = 15;
+    grid[row * Sand.COLS + col] = Sand.ELEMENTS.WOOD;
+    grid[(row - 1) * Sand.COLS + col] = Sand.ELEMENTS.FIRE;
+    // Fire decays at 0.1, so re-seed and tick a few times; wood should ignite.
+    let ignited = false;
+    for (let i = 0; i < 5; i++) {
+      grid[(row - 1) * Sand.COLS + col] = Sand.ELEMENTS.FIRE;
+      Sand.tick();
+      if (Sand.getCell(col, row) === Sand.ELEMENTS.FIRE) { ignited = true; break; }
+    }
+    expect(ignited).toBe(true);
+    Math.random.mockRestore();
+  });
+
+  test('WOOD catches fire when touching lava', () => {
+    jest.spyOn(global.Math, 'random').mockReturnValue(0.1);
+    Sand.clearGrid();
+    const grid = Sand.getSandState().grid;
+    const col = 20;
+    const row = 15;
+    grid[row * Sand.COLS + col] = Sand.ELEMENTS.WOOD;
+    grid[row * Sand.COLS + (col + 1)] = Sand.ELEMENTS.LAVA;
+    Sand.tick();
+    expect(Sand.getCell(col, row)).toBe(Sand.ELEMENTS.FIRE);
+    Math.random.mockRestore();
+  });
+
+  test('WOOD is inert with no fire nearby', () => {
+    Sand.clearGrid();
+    const col = 20;
+    const row = 15;
+    Sand.getSandState().grid[row * Sand.COLS + col] = Sand.ELEMENTS.WOOD;
+    for (let i = 0; i < 5; i++) Sand.tick();
+    expect(Sand.getCell(col, row)).toBe(Sand.ELEMENTS.WOOD);
+  });
+});
+
 describe('shared scope integration', () => {
   test('no redeclaration errors when all scripts load in same scope', () => {
     const fs = require('fs');
