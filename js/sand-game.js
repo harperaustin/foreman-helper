@@ -227,8 +227,7 @@ function tickLava(col, row) {
     }
     return true;
   }
-  // Slow movement: only flow every 2nd frame.
-  if (state.frameCount % 2 !== 0) return false;
+  // Gravity acts every tick so lava flows straight down like a liquid.
   if (getCell(col, row + 1) === ELEMENTS.EMPTY) {
     setCell(col, row, ELEMENTS.EMPTY);
     setCell(col, row + 1, ELEMENTS.LAVA);
@@ -236,7 +235,8 @@ function tickLava(col, row) {
     return true;
   }
   if (trySwapDown(col, row)) return true;
-  // spread sideways like a viscous fluid
+  // Viscous sideways spread only every 2nd frame so flows stay slow.
+  if (state.frameCount % 2 !== 0) return false;
   var first = Math.random() < 0.5 ? -1 : 1;
   var dirs = [first, -first];
   for (var i = 0; i < dirs.length; i++) {
