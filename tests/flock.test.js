@@ -251,7 +251,7 @@ describe('count control', () => {
   });
 
   test('clamps above MAX_COUNT', () => {
-    Flock.setBoidCount(99);
+    Flock.setBoidCount(Flock.MAX_COUNT + 50);
     expect(Flock.getFlockState().count).toBe(Flock.MAX_COUNT);
   });
 
@@ -411,6 +411,55 @@ describe('no overlap', () => {
   });
 });
 
+describe('strict non-overlap guarantee', () => {
+  test('two coincident boids end up >= MIN_DISTANCE apart', () => {
+    Flock.setBoidCount(Flock.MIN_COUNT);
+    const boids = Flock.getFlockState().boids;
+    boids[0].x = 200; boids[0].y = 150;
+    boids[1].x = 200; boids[1].y = 150;
+    Flock.resolveCollisions();
+    const dx = boids[0].x - boids[1].x;
+    const dy = boids[0].y - boids[1].y;
+    expect(Math.sqrt(dx * dx + dy * dy)).toBeGreaterThanOrEqual(Flock.MIN_DISTANCE);
+  });
+
+  test('a tight clump spreads to >= MIN_DISTANCE', () => {
+    Flock.setBoidCount(20);
+    const boids = Flock.getFlockState().boids;
+    boids.forEach((b) => { b.x = 240 + Math.random(); b.y = 200 + Math.random(); });
+    Flock.resolveCollisions();
+    expect(minPairwiseDistance(boids)).toBeGreaterThanOrEqual(Flock.MIN_DISTANCE);
+  });
+
+  test('default-count run stays >= MIN_DISTANCE after many ticks', () => {
+    Flock.setBoidCount(Flock.DEFAULT_COUNT);
+    for (let i = 0; i < 150; i++) Flock.tick();
+    const boids = Flock.getFlockState().boids;
+    expect(minPairwiseDistance(boids)).toBeGreaterThanOrEqual(Flock.MIN_DISTANCE);
+  });
+
+  test('MAX_COUNT-packed run stays >= MIN_DISTANCE after many ticks', () => {
+    Flock.setBoidCount(Flock.MAX_COUNT);
+    for (let i = 0; i < 150; i++) Flock.tick();
+    const boids = Flock.getFlockState().boids;
+    expect(boids.length).toBe(Flock.MAX_COUNT);
+    expect(minPairwiseDistance(boids)).toBeGreaterThanOrEqual(Flock.MIN_DISTANCE);
+  });
+});
+
+describe('higher boid cap', () => {
+  test('MAX_COUNT exceeds 80', () => {
+    expect(Flock.MAX_COUNT).toBeGreaterThan(80);
+  });
+
+  test('setBoidCount(81) yields more than 80 boids', () => {
+    Flock.setBoidCount(81);
+    const state = Flock.getFlockState();
+    expect(state.count).toBeGreaterThan(80);
+    expect(state.boids.length).toBeGreaterThan(80);
+  });
+});
+
 describe('addBoids', () => {
   test('appends the requested number of boids', () => {
     Flock.setBoidCount(20);
@@ -498,5 +547,12 @@ describe('index.html markup', () => {
 
   test('Flock has an Add Boids button', () => {
     expect(document.getElementById('flock-add-btn')).not.toBeNull();
+  });
+
+  test('flock-count slider max exceeds 80 and equals MAX_COUNT', () => {
+    const slider = document.getElementById('flock-count');
+    const max = Number(slider.getAttribute('max'));
+    expect(max).toBeGreaterThan(80);
+    expect(max).toBe(Flock.MAX_COUNT);
   });
 });
