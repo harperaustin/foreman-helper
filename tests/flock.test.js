@@ -176,6 +176,72 @@ describe('reset', () => {
   });
 });
 
+describe('public API', () => {
+  test('exposes reset alias that re-seeds a populated, fresh flock', () => {
+    for (let i = 0; i < 20; i++) Flock.tick();
+    expect(typeof Flock.reset).toBe('function');
+    const before = Flock.getFlockState().boids.map((b) => ({ x: b.x, y: b.y }));
+    const s = Flock.reset();
+    expect(s.frameCount).toBe(0);
+    expect(s.boids.length).toBeGreaterThanOrEqual(12);
+    // Positions should be re-seeded (not identical to the pre-reset snapshot).
+    const changed = s.boids.some((b, i) => !before[i] || b.x !== before[i].x || b.y !== before[i].y);
+    expect(changed).toBe(true);
+  });
+
+  test('exposes init/start/stop aliases', () => {
+    expect(typeof Flock.init).toBe('function');
+    expect(typeof Flock.start).toBe('function');
+    expect(typeof Flock.stop).toBe('function');
+    Flock.start();
+    expect(Flock.getFlockState().running).toBe(true);
+    Flock.stop();
+    expect(Flock.getFlockState().running).toBe(false);
+  });
+
+  // Average per-tick boid displacement, measured with edge-wrap accounted for.
+  function avgStep(ticks) {
+    const w = Flock.CANVAS_WIDTH;
+    const h = Flock.CANVAS_HEIGHT;
+    let prev = Flock.getFlockState().boids.map((b) => ({ x: b.x, y: b.y }));
+    let total = 0;
+    let count = 0;
+    for (let t = 0; t < ticks; t++) {
+      Flock.tick();
+      const cur = Flock.getFlockState().boids;
+      for (let i = 0; i < cur.length; i++) {
+        let dx = Math.abs(cur[i].x - prev[i].x);
+        let dy = Math.abs(cur[i].y - prev[i].y);
+        dx = Math.min(dx, w - dx);
+        dy = Math.min(dy, h - dy);
+        total += Math.sqrt(dx * dx + dy * dy);
+        count++;
+      }
+      prev = cur.map((b) => ({ x: b.x, y: b.y }));
+    }
+    return total / count;
+  }
+
+  test('setSpeed makes the boids fly faster (effect persists across reset)', () => {
+    Flock.setSpeed(0.5);
+    Flock.reset();
+    const slow = avgStep(25);
+    Flock.setSpeed(6);
+    Flock.reset();
+    const fast = avgStep(25);
+    expect(fast).toBeGreaterThan(slow);
+  });
+
+  test('setSpeed applied after reset still takes effect', () => {
+    Flock.reset();
+    Flock.setSpeed(0.5);
+    const slow = avgStep(25);
+    Flock.setSpeed(6);
+    const fast = avgStep(25);
+    expect(fast).toBeGreaterThan(slow);
+  });
+});
+
 describe('count control', () => {
   test('setBoidCount updates count and boid array', () => {
     Flock.setBoidCount(30);

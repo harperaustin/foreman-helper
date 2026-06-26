@@ -321,6 +321,14 @@ var FlockModule = {
   startFlock: startFlock,
   stopFlock: stopFlock,
   resetFlock: resetFlock,
+  // Public API aliases matching the conventional verb names. `reset` re-seeds
+  // the flock to a fresh randomized state, respecting the current boid count
+  // and speed setting (makeBoid/spawnBoids read state.speed), so a speed
+  // change applied before or after reset is reflected in per-tick movement.
+  init: initFlock,
+  start: startFlock,
+  stop: stopFlock,
+  reset: resetFlock,
   tick: tick,
   getFlockState: getFlockState,
   setBoidCount: setBoidCount,
