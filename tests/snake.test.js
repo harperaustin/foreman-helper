@@ -308,6 +308,22 @@ describe('getFont theme awareness', () => {
   });
 });
 
+describe('getThemeColors theme awareness', () => {
+  test('default theme returns dark colors', () => {
+    document.body.className = '';
+    const colors = Snake.getThemeColors();
+    expect(colors.bg).toBe('#111');
+  });
+
+  test('crimson-forest theme returns correct crimson-forest colors', () => {
+    document.body.className = 'theme-crimson-forest';
+    const colors = Snake.getThemeColors();
+    expect(colors.bg).toBe('#14221a');
+    expect(colors.grid).toBe('#203527');
+    expect(colors.accent).toBe('#9c1c1c');
+  });
+});
+
 describe('STAGE_LABELS constant', () => {
   test('equals expected pipeline stage labels', () => {
     expect(Snake.STAGE_LABELS).toEqual(['R', 'P', 'V', 'I', 'V', 'PR']);

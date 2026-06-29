@@ -85,6 +85,38 @@ body.theme-colorful {
   --mascot-boots: #7c4dff;
 }
 
+body.theme-crimson-forest {
+  --bg: #111e16;
+  --surface: #1b2e23;
+  --text: #f3fbf6;
+  --text-muted: #8ba394;
+  --accent: #b32626;
+  --feedback-arrow: #d93838;
+
+  /* Agent custom colors */
+  --color-researcher: #1e4d35;
+  --color-planner: #287a55;
+  --color-verifier: #9c2a2a;
+  --color-implementer: #2e6b47;
+  --color-validator: #b83232;
+  --color-build-watcher: #225c34;
+  --color-post-mortem: #6e1d1d;
+
+  /* Mascot palette (crimson forest theme) */
+  --mascot-hat: #b32626;
+  --mascot-hat-shade: #801a1a;
+  --mascot-skin: #e8b87a;
+  --mascot-detail: #2c2416;
+  --mascot-body: #1e4d35;
+  --mascot-straps: #133321;
+  --mascot-buckle: #b32626;
+  --mascot-belt: #5c4033;
+  --mascot-belt-buckle: #7a6e5f;
+  --mascot-clipboard: #d4c9a8;
+  --mascot-clipboard-clip: #5c4033;
+  --mascot-boots: #5c4033;
+}
+
 body {
   font-family: 'VT323', monospace;
   font-size: 18px;
