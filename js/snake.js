@@ -47,6 +47,8 @@ function getThemeColors() {
     return { bg: '#f0f0f0', grid: '#ddd', text: '#333', accent: '#f5c518' };
   } else if (cl.contains('theme-colorful')) {
     return { bg: '#1a1a2e', grid: '#2a2a4e', text: '#fff', accent: '#ff6b6b' };
+  } else if (cl.contains('theme-crimson-forest')) {
+    return { bg: '#14221a', grid: '#203527', text: '#f4f9f4', accent: '#9c1c1c' };
   }
   return { bg: '#111', grid: '#222', text: '#fff', accent: '#f5c518' };
 }
@@ -471,6 +473,7 @@ var SnakeModule = {
   getLeaderboard: getLeaderboard,
   clearLeaderboard: clearLeaderboard,
   getFont: getFont,
+  getThemeColors: getThemeColors,
   GRID_SIZE: GRID_SIZE,
   CELL_SIZE: CELL_SIZE,
   STAGE_LABELS: STAGE_LABELS

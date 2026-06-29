@@ -569,6 +569,7 @@ describe('theme toggle', () => {
          <button class="theme-btn" data-theme="light" aria-pressed="false" title="Light mode">☀️</button>
          <button class="theme-btn" data-theme="colorful" aria-pressed="false" title="Colorful mode">🌈</button>
          <button class="theme-btn" data-theme="professional" aria-pressed="false" title="Professional mode">💼</button>
+         <button class="theme-btn" data-theme="crimson-forest" aria-pressed="false" title="Crimson Forest mode">🌲</button>
        </div>
      </header>
      <main>
@@ -590,9 +591,12 @@ describe('theme toggle', () => {
    const { setTheme } = loadApp();
    setTheme('light');
    expect(document.body.classList.contains('theme-light')).toBe(true);
+   setTheme('crimson-forest');
+   expect(document.body.classList.contains('theme-crimson-forest')).toBe(true);
    setTheme('dark');
    expect(document.body.classList.contains('theme-light')).toBe(false);
    expect(document.body.classList.contains('theme-colorful')).toBe(false);
+   expect(document.body.classList.contains('theme-crimson-forest')).toBe(false);
   });
 
   test('setTheme updates mascot img src', () => {
@@ -628,6 +632,38 @@ describe('theme toggle', () => {
    const { setTheme } = loadApp();
    setTheme('professional');
    expect(document.body.classList.contains('theme-professional')).toBe(true);
+  });
+
+  test('setTheme("crimson-forest") adds theme-crimson-forest class to body', () => {
+   const { setTheme } = loadApp();
+   setTheme('crimson-forest');
+   expect(document.body.classList.contains('theme-crimson-forest')).toBe(true);
+  });
+
+  test('setTheme("crimson-forest") updates mascot img src', () => {
+   const { setTheme } = loadApp();
+   setTheme('crimson-forest');
+   const img = document.querySelector('img.header-mascot');
+   expect(img.getAttribute('src')).toBe('assets/foreman-mascot-crimson.svg');
+  });
+
+  test('setTheme("crimson-forest") persists to localStorage', () => {
+   const { setTheme } = loadApp();
+   setTheme('crimson-forest');
+   expect(localStorage.getItem('foreman-theme')).toBe('crimson-forest');
+  });
+
+  test('crimson-forest button gets active class and aria-pressed', () => {
+   const { setTheme } = loadApp();
+   setTheme('crimson-forest');
+
+   const crimsonBtn = document.querySelector('[data-theme="crimson-forest"]');
+   const darkBtn = document.querySelector('[data-theme="dark"]');
+
+   expect(crimsonBtn.classList.contains('active')).toBe(true);
+   expect(crimsonBtn.getAttribute('aria-pressed')).toBe('true');
+   expect(darkBtn.classList.contains('active')).toBe(false);
+   expect(darkBtn.getAttribute('aria-pressed')).toBe('false');
   });
 
   test('setTheme with invalid value falls back to dark', () => {
