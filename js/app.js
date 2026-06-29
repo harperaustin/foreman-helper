@@ -1212,6 +1212,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.ForemanFlock) window.ForemanFlock.resetFlock();
     });
   }
+  var flockAddBtn = document.getElementById('flock-add-btn');
+  if (flockAddBtn) {
+    flockAddBtn.addEventListener('click', function() {
+      if (!window.ForemanFlock) return;
+      window.ForemanFlock.addBoids(5);
+      var st = window.ForemanFlock.getFlockState();
+      if (flockCountInput) flockCountInput.value = st.count;     // keep slider in sync
+      if (flockCountValue) flockCountValue.textContent = st.count;
+    });
+  }
   var flockCanvasEl = document.getElementById('flock-canvas');
   if (flockCanvasEl) {
     flockCanvasEl.addEventListener('mousemove', function(e) {

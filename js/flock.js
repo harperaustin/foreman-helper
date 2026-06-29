@@ -9,7 +9,7 @@ var CANVAS_HEIGHT = 400;
 
 var DEFAULT_COUNT = 50;
 var MIN_COUNT = 10;
-var MAX_COUNT = 80;
+var MAX_COUNT = 150;
 
 var DEFAULT_SPEED = 2.5; // max velocity magnitude (px/frame)
 var MIN_SPEED = 0.5;
@@ -31,6 +31,14 @@ var PREDATOR_WEIGHT = 3.0;
 var BOID_SIZE = 6;
 var BOID_COLOR = '#48cae4';
 var BG_COLOR = '#0d1b2a';
+
+var MIN_DISTANCE = 14;          // minimum centre-to-centre spacing (px); ~2x BOID_SIZE
+var SEPARATION_BUFFER = 0.5;    // settle pairs comfortably above MIN_DISTANCE
+var SPAWN_MAX_ATTEMPTS = 30;    // rejection-sampling tries before fallback
+var COLLISION_PASSES = 12;      // positional resolution iterations per tick
+var COLLISION_MAX_ITERS = 60;   // hard safety cap on resolution iterations
+var EDGE_MARGIN = 1e-6;         // keeps clamped boids strictly inside the canvas
+var DEFAULT_ADD = 5;            // boids added per "Add Boids" click
 
 var canvas = null;
 var ctx = null;
@@ -72,11 +80,34 @@ function makeBoid() {
   };
 }
 
+// True if (x, y) is at least minDist away from every boid in the array.
+function isFarEnough(x, y, boids, minDist) {
+  for (var i = 0; i < boids.length; i++) {
+    var dx = x - boids[i].x;
+    var dy = y - boids[i].y;
+    if (dx * dx + dy * dy < minDist * minDist) return false;
+  }
+  return true;
+}
+
+// Make a boid whose position does not overlap any in `existing`. Rejection-samples
+// up to SPAWN_MAX_ATTEMPTS times; falls back to the last candidate so it never hangs
+// even on a densely packed canvas. Velocity comes straight from makeBoid().
+function makeNonOverlappingBoid(existing) {
+  var boid = makeBoid();
+  for (var attempt = 0; attempt < SPAWN_MAX_ATTEMPTS; attempt++) {
+    if (isFarEnough(boid.x, boid.y, existing, MIN_DISTANCE)) break;
+    boid.x = Math.random() * CANVAS_WIDTH;
+    boid.y = Math.random() * CANVAS_HEIGHT;
+  }
+  return boid;
+}
+
 function spawnBoids(n) {
   var count = clampCount(n);
   state.boids = [];
   for (var i = 0; i < count; i++) {
-    state.boids.push(makeBoid());
+    state.boids.push(makeNonOverlappingBoid(state.boids));
   }
 }
 
@@ -219,6 +250,94 @@ function tick() {
     boid.x = ((boid.x % CANVAS_WIDTH) + CANVAS_WIDTH) % CANVAS_WIDTH;
     boid.y = ((boid.y % CANVAS_HEIGHT) + CANVAS_HEIGHT) % CANVAS_HEIGHT;
   }
+  // Hard no-overlap guarantee: push apart any boids closer than MIN_DISTANCE.
+  resolveCollisions(COLLISION_PASSES);
+  return getFlockState();
+}
+
+// Positional collision resolution: iteratively push apart any pair of boids that
+// are closer than MIN_DISTANCE. Boids are CLAMPED inside the canvas (not wrapped)
+// so a pushed boid never teleports to the opposite edge and re-introduces an
+// overlap. Pairs are separated to MIN_DISTANCE + SEPARATION_BUFFER so the settled
+// state stays comfortably >= MIN_DISTANCE. Iterates until no pair is closer than
+// MIN_DISTANCE or a safety cap is hit, guaranteeing a hard non-overlap result.
+function clampToCanvas(boid) {
+  if (boid.x < 0) boid.x = 0;
+  else if (boid.x > CANVAS_WIDTH - EDGE_MARGIN) boid.x = CANVAS_WIDTH - EDGE_MARGIN;
+  if (boid.y < 0) boid.y = 0;
+  else if (boid.y > CANVAS_HEIGHT - EDGE_MARGIN) boid.y = CANVAS_HEIGHT - EDGE_MARGIN;
+}
+
+function resolveCollisions(passes) {
+  var requested = (typeof passes === 'number' && passes > 0) ? passes : COLLISION_PASSES;
+  var maxIters = Math.max(requested, COLLISION_MAX_ITERS);
+  var target = MIN_DISTANCE + SEPARATION_BUFFER;
+  var n = state.boids.length;
+  if (n < 2) return;
+  // Spatial hash so each boid only tests neighbours in its own and adjacent
+  // cells. Cell size == target means any pair closer than target lands in the
+  // same or a neighbouring cell, keeping the result identical to the brute-force
+  // O(n^2) check while making each pass closer to O(n).
+  var cell = target;
+  for (var p = 0; p < maxIters; p++) {
+    var grid = {};
+    for (var g = 0; g < n; g++) {
+      var bg = state.boids[g];
+      var cx = Math.floor(bg.x / cell);
+      var cy = Math.floor(bg.y / cell);
+      var key = cx + ',' + cy;
+      if (!grid[key]) grid[key] = [];
+      grid[key].push(g);
+    }
+    var anyOverlap = false;
+    for (var i = 0; i < n; i++) {
+      var a = state.boids[i];
+      var acx = Math.floor(a.x / cell);
+      var acy = Math.floor(a.y / cell);
+      for (var ox = -1; ox <= 1; ox++) {
+        for (var oy = -1; oy <= 1; oy++) {
+          var bucket = grid[(acx + ox) + ',' + (acy + oy)];
+          if (!bucket) continue;
+          for (var bi = 0; bi < bucket.length; bi++) {
+            var k = bucket[bi];
+            if (k <= i) continue;           // each unordered pair handled once
+            var b = state.boids[k];
+            var dx = b.x - a.x, dy = b.y - a.y;
+            var d = Math.sqrt(dx * dx + dy * dy);
+            if (d >= target) continue;
+            anyOverlap = true;
+            var nx, ny;
+            if (d === 0) {                  // exact overlap: pick a random axis
+              var ang = Math.random() * Math.PI * 2;
+              nx = Math.cos(ang); ny = Math.sin(ang); d = 0.0001;
+            } else { nx = dx / d; ny = dy / d; }
+            var push = (target - d) / 2;
+            a.x -= nx * push; a.y -= ny * push;
+            b.x += nx * push; b.y += ny * push;
+            clampToCanvas(a);
+            clampToCanvas(b);
+            acx = Math.floor(a.x / cell);   // `a` may have moved cells
+            acy = Math.floor(a.y / cell);
+          }
+        }
+      }
+    }
+    // Converged: nothing is closer than the separation target. Bail early so the
+    // common (already-separated) case costs a single pass instead of many.
+    if (!anyOverlap) break;
+  }
+}
+
+// Append `n` non-overlapping boids to the existing flock, clamped to MAX_COUNT.
+// Does not replace existing boids.
+function addBoids(n) {
+  var add = Math.round(Number(n));
+  if (!isFiniteNumber(add) || add <= 0) add = DEFAULT_ADD;
+  var target = clampCount(state.boids.length + add);
+  while (state.boids.length < target) {
+    state.boids.push(makeNonOverlappingBoid(state.boids));
+  }
+  state.count = state.boids.length;
   return getFlockState();
 }
 
@@ -332,6 +451,8 @@ var FlockModule = {
   tick: tick,
   getFlockState: getFlockState,
   setBoidCount: setBoidCount,
+  addBoids: addBoids,
+  resolveCollisions: resolveCollisions,
   setSpeed: setSpeed,
   setPredator: setPredator,
   clearPredator: clearPredator,
@@ -349,6 +470,7 @@ var FlockModule = {
   ALIGN_RADIUS: ALIGN_RADIUS,
   COHESION_RADIUS: COHESION_RADIUS,
   PREDATOR_RADIUS: PREDATOR_RADIUS,
+  MIN_DISTANCE: MIN_DISTANCE,
   CANVAS_WIDTH: CANVAS_WIDTH,
   CANVAS_HEIGHT: CANVAS_HEIGHT
 };
