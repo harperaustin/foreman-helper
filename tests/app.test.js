@@ -570,6 +570,7 @@ describe('theme toggle', () => {
          <button class="theme-btn" data-theme="colorful" aria-pressed="false" title="Colorful mode">🌈</button>
          <button class="theme-btn" data-theme="professional" aria-pressed="false" title="Professional mode">💼</button>
          <button class="theme-btn" data-theme="crimson-forest" aria-pressed="false" title="Crimson Forest mode">🌲</button>
+         <button class="theme-btn" data-theme="aquatic" aria-pressed="false" title="Aquatic mode">🌊</button>
        </div>
      </header>
      <main>
@@ -666,6 +667,46 @@ describe('theme toggle', () => {
    expect(darkBtn.getAttribute('aria-pressed')).toBe('false');
   });
 
+  test('setTheme("aquatic") adds theme-aquatic class to body', () => {
+   const { setTheme } = loadApp();
+   setTheme('aquatic');
+   expect(document.body.classList.contains('theme-aquatic')).toBe(true);
+  });
+
+  test('setTheme("aquatic") updates mascot img src', () => {
+   const { setTheme } = loadApp();
+   setTheme('aquatic');
+   const img = document.querySelector('img.header-mascot');
+   expect(img.getAttribute('src')).toBe('assets/foreman-mascot-aquatic.svg');
+  });
+
+  test('setTheme("aquatic") persists to localStorage', () => {
+   const { setTheme } = loadApp();
+   setTheme('aquatic');
+   expect(localStorage.getItem('foreman-theme')).toBe('aquatic');
+  });
+
+  test('aquatic button gets active class and aria-pressed', () => {
+   const { setTheme } = loadApp();
+   setTheme('aquatic');
+
+   const aquaticBtn = document.querySelector('[data-theme="aquatic"]');
+   const darkBtn = document.querySelector('[data-theme="dark"]');
+
+   expect(aquaticBtn.classList.contains('active')).toBe(true);
+   expect(aquaticBtn.getAttribute('aria-pressed')).toBe('true');
+   expect(darkBtn.classList.contains('active')).toBe(false);
+   expect(darkBtn.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  test('switching from aquatic to dark removes theme-aquatic class', () => {
+   const { setTheme } = loadApp();
+   setTheme('aquatic');
+   expect(document.body.classList.contains('theme-aquatic')).toBe(true);
+   setTheme('dark');
+   expect(document.body.classList.contains('theme-aquatic')).toBe(false);
+  });
+
   test('setTheme with invalid value falls back to dark', () => {
    const { setTheme } = loadApp();
    setTheme('light');
@@ -673,6 +714,7 @@ describe('theme toggle', () => {
    setTheme('invalid-theme');
    expect(document.body.classList.contains('theme-light')).toBe(false);
    expect(document.body.classList.contains('theme-professional')).toBe(false);
+   expect(document.body.classList.contains('theme-aquatic')).toBe(false);
    expect(localStorage.getItem('foreman-theme')).toBe('dark');
   });
 });

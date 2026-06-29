@@ -117,6 +117,38 @@ body.theme-crimson-forest {
   --mascot-boots: #5c4033;
 }
 
+body.theme-aquatic {
+  --bg: #07263b;
+  --surface: #0d3a59;
+  --text: #eaf6fb;
+  --text-muted: #8bb8cf;
+  --accent: #ff6f61;
+  --feedback-arrow: #ff6f61;
+
+  /* Agent custom colors */
+  --color-researcher: #1b7a8c;
+  --color-planner: #2e86c1;
+  --color-verifier: #ff6f61;
+  --color-implementer: #48c9d6;
+  --color-validator: #ff8a65;
+  --color-build-watcher: #1f6fb2;
+  --color-post-mortem: #0e4d6b;
+
+  /* Mascot palette (aquatic theme) */
+  --mascot-hat: #ff6f61;
+  --mascot-hat-shade: #e0564a;
+  --mascot-skin: #e8b87a;
+  --mascot-detail: #2c2416;
+  --mascot-body: #2e86c1;
+  --mascot-straps: #1f6fb2;
+  --mascot-buckle: #ff6f61;
+  --mascot-belt: #0e4d6b;
+  --mascot-belt-buckle: #7fd3e0;
+  --mascot-clipboard: #d4c9a8;
+  --mascot-clipboard-clip: #0e4d6b;
+  --mascot-boots: #0e4d6b;
+}
+
 body {
   font-family: 'VT323', monospace;
   font-size: 18px;

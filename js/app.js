@@ -9,9 +9,10 @@ const THEME_MASCOTS = {
   colorful: 'assets/foreman-mascot-colorful.svg',
   professional: 'assets/foreman-mascot.svg',
   'crimson-forest': 'assets/foreman-mascot-crimson.svg',
+  aquatic: 'assets/foreman-mascot-aquatic.svg',
 };
 
-const VALID_THEMES = ['dark', 'light', 'colorful', 'professional', 'crimson-forest'];
+const VALID_THEMES = ['dark', 'light', 'colorful', 'professional', 'crimson-forest', 'aquatic'];
 
 function setTheme(themeName) {
   // Whitelist-validate theme name
@@ -20,7 +21,7 @@ function setTheme(themeName) {
   }
 
   // Remove existing theme classes
-  document.body.classList.remove('theme-light', 'theme-colorful', 'theme-professional', 'theme-crimson-forest');
+  document.body.classList.remove('theme-light', 'theme-colorful', 'theme-professional', 'theme-crimson-forest', 'theme-aquatic');
   if (themeName !== 'dark') {
     document.body.classList.add('theme-' + themeName);
   }
